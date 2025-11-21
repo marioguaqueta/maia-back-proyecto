@@ -1,0 +1,814 @@
+import io
+import os
+import zipfile
+import tempfile
+import shutil
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import warnings
+import base64
+from datetime import datetime
+
+from flask import Flask, request, jsonify, send_file
+from werkzeug.utils import secure_filename
+
+# PyTorch and image processing imports
+import torch
+import torch.nn as nn
+from PIL import Image
+import PIL
+import albumentations as A
+from torch.utils.data import DataLoader
+
+# HerdNet imports
+from animaloc.models import HerdNet, LossWrapper
+from animaloc.eval import HerdNetStitcher, HerdNetEvaluator
+from animaloc.eval.metrics import PointsMetrics
+from animaloc.datasets import CSVDataset
+from animaloc.data.transforms import DownSample, Rotate90
+from animaloc.vizual import draw_points, draw_text
+from animaloc.utils.useful_funcs import mkdir
+
+# Suppress warnings and increase PIL image size limit
+warnings.filterwarnings('ignore')
+PIL.Image.MAX_IMAGE_PIXELS = None
+
+app = Flask(__name__)
+
+# Allowed file extensions
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'JPG', 'JPEG', 'gif', 'webp', 'bmp'}
+ALLOWED_ZIP_EXTENSIONS = {'zip'}
+
+# ========================================
+# Load PyTorch Model for Animal Detection
+# ========================================
+print("Loading HerdNet PyTorch model...")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
+# Load checkpoint
+MODEL_PATH = "./herdnet_model.pth"
+print(f"Loading checkpoint from {MODEL_PATH}...")
+
+map_location = torch.device('cpu')
+if torch.cuda.is_available():
+    map_location = torch.device('cuda')
+
+checkpoint = torch.load(MODEL_PATH, map_location=map_location)
+
+# Extract model configuration from checkpoint
+classes_dict = checkpoint.get('classes', {
+    1: 'buffalo', 2: 'elephant', 3: 'kob', 
+    4: 'topi', 5: 'warthog', 6: 'waterbuck'
+})
+num_classes = len(classes_dict) + 1  # +1 for background
+img_mean = checkpoint.get('mean', [0.485, 0.456, 0.406])
+img_std = checkpoint.get('std', [0.229, 0.224, 0.225])
+
+print(f"Model classes: {classes_dict}")
+print(f"Number of classes: {num_classes}")
+print(f"Normalization - Mean: {img_mean}, Std: {img_std}")
+
+# Build ANIMAL_CLASSES dictionary
+ANIMAL_CLASSES = {0: "no_animal"}
+ANIMAL_CLASSES.update(classes_dict)
+
+# Build the model
+print("Building HerdNet model...")
+model = HerdNet(num_classes=num_classes, pretrained=False)
+model = LossWrapper(model, [])
+model.load_state_dict(checkpoint['model_state_dict'])
+model = model.to(device)
+model.eval()
+
+print(f"✓ Model loaded successfully with {num_classes} classes")
+print(f"  Classes: {list(ANIMAL_CLASSES.values())}")
+
+
+# ========================================
+# Load YOLOv11 Model for Animal Detection
+# ========================================
+print("\nLoading YOLOv11 model...")
+try:
+    from ultralytics import YOLO
+    
+    YOLO_MODEL_PATH = "./best.pt"
+    yolo_model = YOLO(YOLO_MODEL_PATH)
+    yolo_model.to(device)
+    
+    # Get class names from the model
+    YOLO_CLASSES = yolo_model.names  # Dictionary of class ID to class name
+    
+    print(f"✓ YOLOv11 model loaded successfully")
+    print(f"  Model classes: {YOLO_CLASSES}")
+    print(f"  Number of classes: {len(YOLO_CLASSES)}")
+    yolo_loaded = True
+except Exception as e:
+    print(f"⚠ Warning: Could not load YOLOv11 model: {str(e)}")
+    yolo_model = None
+    YOLO_CLASSES = {}
+    yolo_loaded = False
+
+def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45, img_size=640, include_annotated_images=True):
+    """
+    Analyze images using YOLOv11 model
+    
+    Args:
+        image_dir: Directory containing images
+        conf_threshold: Confidence threshold for detections (default 0.25)
+        iou_threshold: IOU threshold for NMS (default 0.45)
+        img_size: Image size for inference (default 640)
+        include_annotated_images: Whether to generate annotated images with bboxes (default True)
+    
+    Returns:
+        Dictionary with detection results, statistics, and annotated images
+    """
+    if not yolo_loaded:
+        raise Exception("YOLOv11 model is not loaded. Check that best.pt exists.")
+    
+    # Get all image files
+    img_names = [i for i in os.listdir(image_dir) 
+                 if i.endswith(('.JPG', '.jpg', '.JPEG', '.jpeg', '.png', '.PNG', '.bmp', '.webp'))]
+    
+    if not img_names:
+        raise Exception("No images found in the uploaded zip file")
+    
+    print(f"Processing {len(img_names)} images with YOLOv11...")
+    
+    all_detections = []
+    images_with_animals = []
+    images_without_animals = []
+    species_counts = {}
+    annotated_images = []
+    
+    for img_name in img_names:
+        img_path = os.path.join(image_dir, img_name)
+        
+        try:
+            # Run inference
+            results = yolo_model.predict(
+                source=img_path,
+                conf=conf_threshold,
+                iou=iou_threshold,
+                imgsz=img_size,
+                verbose=False
+            )
+            
+            # Process results
+            result = results[0]
+            boxes = result.boxes
+            
+            image_detections = []
+            image_has_animals = False
+            
+            # Load original image for annotation
+            original_img = Image.open(img_path)
+            annotated_img = original_img.copy()
+            
+            if len(boxes) > 0:
+                image_has_animals = True
+                images_with_animals.append(img_name)
+                
+                # Create drawing context for annotations
+                from PIL import ImageDraw, ImageFont
+                draw = ImageDraw.Draw(annotated_img)
+                
+                # Try to load a font, fall back to default if not available
+                try:
+                    # Calculate font size based on image size
+                    font_size = max(12, int(min(original_img.width, original_img.height) * 0.02))
+                    font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", font_size)
+                except:
+                    font = ImageFont.load_default()
+                
+                for box in boxes:
+                    # Get detection details
+                    class_id = int(box.cls[0])
+                    confidence = float(box.conf[0])
+                    bbox = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
+                    
+                    class_name = YOLO_CLASSES.get(class_id, f"class_{class_id}")
+                    
+                    # Update species counts
+                    species_counts[class_name] = species_counts.get(class_name, 0) + 1
+                    
+                    detection = {
+                        'image': img_name,
+                        'class_id': class_id,
+                        'class_name': class_name,
+                        'confidence': confidence,
+                        'bbox': {
+                            'x1': bbox[0],
+                            'y1': bbox[1],
+                            'x2': bbox[2],
+                            'y2': bbox[3]
+                        },
+                        'center': {
+                            'x': (bbox[0] + bbox[2]) / 2,
+                            'y': (bbox[1] + bbox[3]) / 2
+                        }
+                    }
+                    
+                    image_detections.append(detection)
+                    all_detections.append(detection)
+                    
+                    # Draw bounding box on the image
+                    if include_annotated_images:
+                        # Define color based on class (you can customize this)
+                        colors = [
+                            '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
+                            '#FF00FF', '#00FFFF', '#FFA500', '#800080',
+                            '#FFC0CB', '#A52A2A'
+                        ]
+                        color = colors[class_id % len(colors)]
+                        
+                        # Draw rectangle
+                        line_width = max(2, int(min(original_img.width, original_img.height) * 0.003))
+                        draw.rectangle(
+                            [(bbox[0], bbox[1]), (bbox[2], bbox[3])],
+                            outline=color,
+                            width=line_width
+                        )
+                        
+                        # Draw label with background
+                        label = f"{class_name} {confidence:.2f}"
+                        
+                        # Get text bounding box
+                        try:
+                            bbox_text = draw.textbbox((bbox[0], bbox[1]), label, font=font)
+                            text_width = bbox_text[2] - bbox_text[0]
+                            text_height = bbox_text[3] - bbox_text[1]
+                        except:
+                            # Fallback for older PIL versions
+                            text_width, text_height = draw.textsize(label, font=font)
+                        
+                        # Draw background rectangle for text
+                        text_bg_bbox = [
+                            bbox[0],
+                            max(0, bbox[1] - text_height - 4),
+                            bbox[0] + text_width + 4,
+                            bbox[1]
+                        ]
+                        draw.rectangle(text_bg_bbox, fill=color)
+                        
+                        # Draw text
+                        draw.text(
+                            (bbox[0] + 2, max(0, bbox[1] - text_height - 2)),
+                            label,
+                            fill='white',
+                            font=font
+                        )
+            
+            if not image_has_animals:
+                images_without_animals.append(img_name)
+            
+            # Convert annotated image to base64 if there were detections
+            if include_annotated_images and image_has_animals:
+                # Resize image if too large (to avoid huge base64 strings)
+                max_size = 1920
+                if max(annotated_img.width, annotated_img.height) > max_size:
+                    ratio = max_size / max(annotated_img.width, annotated_img.height)
+                    new_size = (int(annotated_img.width * ratio), int(annotated_img.height * ratio))
+                    annotated_img = annotated_img.resize(new_size, Image.Resampling.LANCZOS)
+                
+                # Convert to base64
+                buffered = io.BytesIO()
+                annotated_img.save(buffered, format="JPEG", quality=85)
+                img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                
+                annotated_images.append({
+                    'image_name': img_name,
+                    'detections_count': len(image_detections),
+                    'annotated_image_base64': img_base64,
+                    'original_size': {
+                        'width': original_img.width,
+                        'height': original_img.height
+                    },
+                    'annotated_size': {
+                        'width': annotated_img.width,
+                        'height': annotated_img.height
+                    }
+                })
+            
+            print(f"  ✓ {img_name}: {len(image_detections)} detections")
+            
+        except Exception as e:
+            print(f"  ✗ Error processing {img_name}: {str(e)}")
+            images_without_animals.append(img_name)
+    
+    # Prepare summary
+    summary = {
+        'total_images': len(img_names),
+        'images_with_animals': len(images_with_animals),
+        'images_without_animals': len(images_without_animals),
+        'total_detections': len(all_detections),
+        'species_counts': species_counts,
+        'images_with_detections_list': images_with_animals,
+        'images_without_detections_list': images_without_animals
+    }
+    
+    return {
+        'summary': summary,
+        'detections': all_detections,
+        'annotated_images': annotated_images,
+        'processing_params': {
+            'conf_threshold': conf_threshold,
+            'iou_threshold': iou_threshold,
+            'img_size': img_size
+        }
+    }
+
+def allowed_image(filename):
+    """Check if the file is an allowed image type"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'}
+
+
+def allowed_zip(filename):
+    """Check if the file is a zip file"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_ZIP_EXTENSIONS
+
+
+def analyze_images_with_evaluator(image_dir, patch_size=512, overlap=160, rotation=0, thumbnail_size=256):
+    """
+    Analyze images using HerdNetEvaluator (same as infer.py)
+    
+    Args:
+        image_dir: Directory containing images
+        patch_size: Patch size for stitching (default 512)
+        overlap: Overlap for stitching (default 160)
+        rotation: Number of 90-degree rotations (default 0)
+        thumbnail_size: Size for thumbnails (default 256)
+    
+    Returns:
+        Dictionary with detection results, thumbnails, and plots
+    """
+    # Create results directory
+    results_dir = os.path.join(image_dir, 'results')
+    mkdir(results_dir)
+    plots_dir = os.path.join(results_dir, 'plots')
+    mkdir(plots_dir)
+    thumbs_dir = os.path.join(results_dir, 'thumbnails')
+    mkdir(thumbs_dir)
+    
+    # Prepare dataset
+    img_names = [i for i in os.listdir(image_dir) 
+                 if i.endswith(('.JPG', '.jpg', '.JPEG', '.jpeg', '.png', '.PNG'))]
+    
+    if not img_names:
+        raise Exception("No images found in the uploaded zip file")
+    
+    n = len(img_names)
+    df = pd.DataFrame(data={
+        'images': img_names, 
+        'x': [0]*n, 
+        'y': [0]*n, 
+        'labels': [1]*n
+    })
+    
+    # Setup transforms
+    end_transforms = []
+    if rotation != 0:
+        end_transforms.append(Rotate90(k=rotation))
+    end_transforms.append(DownSample(down_ratio=2, anno_type='point'))
+    
+    albu_transforms = [A.Normalize(mean=img_mean, std=img_std)]
+    
+    dataset = CSVDataset(
+        csv_file=df,
+        root_dir=image_dir,
+        albu_transforms=albu_transforms,
+        end_transforms=end_transforms
+    )
+    
+    dataloader = DataLoader(
+        dataset, 
+        batch_size=1, 
+        shuffle=False,
+        sampler=torch.utils.data.SequentialSampler(dataset)
+    )
+    
+    # Build the stitcher
+    stitcher = HerdNetStitcher(
+        model=model,
+        size=(patch_size, patch_size),
+        overlap=overlap,
+        down_ratio=2,
+        up=True,
+        reduction='mean',
+        device_name=device
+    )
+    
+    # Build the evaluator
+    metrics = PointsMetrics(5, num_classes=num_classes)
+    evaluator = HerdNetEvaluator(
+        model=model,
+        dataloader=dataloader,
+        metrics=metrics,
+        lmds_kwargs=dict(kernel_size=(3, 3), adapt_ts=0.2, neg_ts=0.1),
+        device_name=device,
+        print_freq=1,
+        stitcher=stitcher,
+        work_dir=results_dir,
+        header='[INFERENCE]'
+    )
+    
+    # Run inference
+    print(f"Starting inference on {n} images...")
+    evaluator.evaluate(wandb_flag=False, viz=False, log_meters=False)
+    
+    # Get detections
+    detections = evaluator.detections
+    detections.dropna(inplace=True)
+    detections['species'] = detections['labels'].map(classes_dict)
+    
+    # Save detections CSV
+    csv_path = os.path.join(results_dir, 'detections.csv')
+    detections.to_csv(csv_path, index=False)
+    
+    # Generate plots and thumbnails
+    print('Generating plots and thumbnails...')
+    img_names_with_detections = np.unique(detections['images'].values).tolist()
+    
+    thumbnails_data = []
+    plots_data = []
+    
+    for img_name in img_names_with_detections:
+        img_path = os.path.join(image_dir, img_name)
+        img = Image.open(img_path)
+        
+        # Apply rotation if specified
+        if rotation != 0:
+            rot_degrees = rotation * 90
+            img = img.rotate(rot_degrees, expand=True)
+        
+        img_copy = img.copy()
+        
+        # Get detection points for this image
+        img_detections = detections[detections['images'] == img_name]
+        pts = list(img_detections[['y', 'x']].to_records(index=False))
+        pts = [(y, x) for y, x in pts]
+        
+        # Draw points on image
+        output_plot = draw_points(img, pts, color='red', size=10)
+        plot_path = os.path.join(plots_dir, img_name)
+        output_plot.save(plot_path, quality=95)
+        
+        # Convert plot to base64
+        buffered = io.BytesIO()
+        output_plot.save(buffered, format="JPEG", quality=95)
+        plot_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        plots_data.append({
+            'image_name': img_name,
+            'plot_base64': plot_base64
+        })
+        
+        # Create thumbnails for each detection
+        sp_score = list(img_detections[['species', 'scores']].to_records(index=False))
+        for i, ((y, x), (sp, score)) in enumerate(zip(pts, sp_score)):
+            off = thumbnail_size // 2
+            coords = (x - off, y - off, x + off, y + off)
+            
+            # Ensure coordinates are within image bounds
+            coords = (
+                max(0, coords[0]),
+                max(0, coords[1]),
+                min(img_copy.width, coords[2]),
+                min(img_copy.height, coords[3])
+            )
+            
+            thumbnail = img_copy.crop(coords)
+            score_pct = round(score * 100, 0)
+            thumbnail = draw_text(
+                thumbnail, 
+                f"{sp} | {score_pct}%", 
+                position=(10, 5), 
+                font_size=int(0.08 * thumbnail_size)
+            )
+            
+            thumb_name = img_name[:-4] + f'_{i}.JPG'
+            thumb_path = os.path.join(thumbs_dir, thumb_name)
+            thumbnail.save(thumb_path)
+            
+            # Convert thumbnail to base64
+            buffered = io.BytesIO()
+            thumbnail.save(buffered, format="JPEG")
+            thumb_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            
+            thumbnails_data.append({
+                'image_name': img_name,
+                'detection_id': i,
+                'species': sp,
+                'confidence': float(score),
+                'position': {'x': int(x), 'y': int(y)},
+                'thumbnail_base64': thumb_base64
+            })
+    
+    # Prepare summary statistics
+    total_detections = len(detections)
+    images_with_detections = len(img_names_with_detections)
+    images_without_detections = n - images_with_detections
+    
+    # Detection counts by species
+    species_counts = detections['species'].value_counts().to_dict()
+    
+    # Convert detections DataFrame to list of dicts
+    detections_list = detections.to_dict('records')
+    
+    return {
+        'total_images': n,
+        'images_with_detections': images_with_detections,
+        'images_without_detections': images_without_detections,
+        'total_detections': total_detections,
+        'species_counts': species_counts,
+        'detections': detections_list,
+        'thumbnails': thumbnails_data,
+        'plots': plots_data,
+        'processing_params': {
+            'patch_size': patch_size,
+            'overlap': overlap,
+            'rotation': rotation,
+            'thumbnail_size': thumbnail_size
+        }
+    }
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'models': {
+            'herdnet': {
+                'loaded': True,
+                'device': str(device),
+                'num_classes': num_classes,
+                'classes': ANIMAL_CLASSES
+            },
+            'yolov11': {
+                'loaded': yolo_loaded,
+                'device': str(device),
+                'num_classes': len(YOLO_CLASSES) if yolo_loaded else 0,
+                'classes': YOLO_CLASSES if yolo_loaded else {}
+            }
+        }
+    }), 200
+
+@app.route("/analyze-yolo", methods=["POST"])
+def analyze_yolo_endpoint():
+    """
+    Analyze images from a ZIP file using YOLOv11 model
+    
+    Request:
+        - file: ZIP file containing images (multipart/form-data)
+        - conf_threshold: Confidence threshold for detections (optional, default 0.25)
+        - iou_threshold: IOU threshold for NMS (optional, default 0.45)
+        - img_size: Image size for inference (optional, default 640)
+        - include_annotated_images: Include annotated images with bboxes (optional, default true)
+    
+    Returns:
+        JSON with detection results, statistics, and annotated images with bounding boxes
+    """
+    try:
+        if not yolo_loaded:
+            return jsonify({
+                'success': False,
+                'error': 'YOLOv11 model not loaded',
+                'message': 'The YOLOv11 model (best.pt) could not be loaded. Please check the model file.'
+            }), 500
+        
+        # Check if file is present
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Check if file is a zip
+        if not allowed_zip(file.filename):
+            return jsonify({'error': 'File must be a ZIP archive'}), 400
+        
+        # Get optional parameters
+        conf_threshold = float(request.form.get('conf_threshold', 0.25))
+        iou_threshold = float(request.form.get('iou_threshold', 0.45))
+        img_size = int(request.form.get('img_size', 640))
+        include_annotated_images = request.form.get('include_annotated_images', 'true').lower() == 'true'
+        
+        print(f"\n{'='*60}")
+        print(f"Processing ZIP file with YOLOv11: {file.filename}")
+        print(f"Parameters: conf={conf_threshold}, iou={iou_threshold}, img_size={img_size}")
+        print(f"Include annotated images: {include_annotated_images}")
+        print(f"{'='*60}\n")
+        
+        # Create temporary directory for processing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Save and extract ZIP file
+            zip_path = os.path.join(temp_dir, 'upload.zip')
+            file.save(zip_path)
+            
+            # Extract images
+            images_dir = os.path.join(temp_dir, 'images')
+            os.makedirs(images_dir, exist_ok=True)
+            
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                # Extract only image files
+                for member in zip_ref.namelist():
+                    if allowed_image(member) and not member.startswith('__MACOSX'):
+                        # Extract to flat directory (ignore subdirectories)
+                        filename = os.path.basename(member)
+                        if filename:  # Skip directories
+                            source = zip_ref.open(member)
+                            target_path = os.path.join(images_dir, filename)
+                            with open(target_path, 'wb') as target:
+                                shutil.copyfileobj(source, target)
+            
+            # Run analysis
+            results = analyze_images_with_yolo(
+                images_dir,
+                conf_threshold=conf_threshold,
+                iou_threshold=iou_threshold,
+                img_size=img_size,
+                include_annotated_images=include_annotated_images
+            )
+            
+            response = {
+                'success': True,
+                'message': 'Images analyzed successfully with YOLOv11',
+                'model': 'YOLOv11',
+                'classes': YOLO_CLASSES,
+                'summary': results['summary'],
+                'detections': results['detections'],
+                'processing_params': results['processing_params']
+            }
+            
+            # Add annotated images if requested
+            if include_annotated_images:
+                response['annotated_images'] = results['annotated_images']
+                response['annotated_images_count'] = len(results['annotated_images'])
+            
+            print(f"\n{'='*60}")
+            print(f"✓ YOLOv11 Analysis complete!")
+            print(f"  Total detections: {results['summary']['total_detections']}")
+            print(f"  Images with animals: {results['summary']['images_with_animals']}/{results['summary']['total_images']}")
+            print(f"  Annotated images generated: {len(results.get('annotated_images', []))}")
+            print(f"  Species found: {list(results['summary']['species_counts'].keys())}")
+            print(f"{'='*60}\n")
+            
+            return jsonify(response), 200
+            
+    except Exception as e:
+        print(f"Error processing request: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'Analysis failed',
+            'message': str(e)
+        }), 500
+
+@app.route("/models/info", methods=["GET"])
+def models_info():
+    """Get information about available models"""
+    return jsonify({
+        'models': {
+            'herdnet': {
+                'loaded': True,
+                'endpoint': '/analyze-image',
+                'classes': ANIMAL_CLASSES,
+                'num_classes': num_classes
+            },
+            'yolov11': {
+                'loaded': yolo_loaded,
+                'endpoint': '/analyze-yolo',
+                'classes': YOLO_CLASSES if yolo_loaded else {},
+                'num_classes': len(YOLO_CLASSES) if yolo_loaded else 0
+            }
+        }
+    }), 200
+
+@app.route("/analyze-image", methods=["POST"])
+def analyze_image_endpoint():
+    """
+    Analyze images from a ZIP file using HerdNet model
+    
+    Request:
+        - file: ZIP file containing images (multipart/form-data)
+        - patch_size: Patch size for stitching (optional, default 512)
+        - overlap: Overlap for stitching (optional, default 160)
+        - rotation: Number of 90-degree rotations (optional, default 0)
+        - thumbnail_size: Size for thumbnails (optional, default 256)
+        - include_thumbnails: Whether to include thumbnail data (optional, default true)
+        - include_plots: Whether to include plot data (optional, default false)
+    
+    Returns:
+        JSON with detection results, statistics, and optionally thumbnails/plots
+    """
+    try:
+        # Check if file is present
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Check if file is a zip
+        if not allowed_zip(file.filename):
+            return jsonify({'error': 'File must be a ZIP archive'}), 400
+        
+        # Get optional parameters
+        patch_size = int(request.form.get('patch_size', 512))
+        overlap = int(request.form.get('overlap', 160))
+        rotation = int(request.form.get('rotation', 0))
+        thumbnail_size = int(request.form.get('thumbnail_size', 256))
+        include_thumbnails = request.form.get('include_thumbnails', 'true').lower() == 'true'
+        include_plots = request.form.get('include_plots', 'false').lower() == 'true'
+        
+        print(f"\n{'='*60}")
+        print(f"Processing ZIP file: {file.filename}")
+        print(f"Parameters: patch_size={patch_size}, overlap={overlap}, rotation={rotation}, thumbnail_size={thumbnail_size}")
+        print(f"{'='*60}\n")
+        
+        # Create temporary directory for processing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Save and extract ZIP file
+            zip_path = os.path.join(temp_dir, 'upload.zip')
+            file.save(zip_path)
+            
+            # Extract images
+            images_dir = os.path.join(temp_dir, 'images')
+            os.makedirs(images_dir, exist_ok=True)
+            
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                # Extract only image files
+                for member in zip_ref.namelist():
+                    if allowed_image(member) and not member.startswith('__MACOSX'):
+                        # Extract to flat directory (ignore subdirectories)
+                        filename = os.path.basename(member)
+                        if filename:  # Skip directories
+                            source = zip_ref.open(member)
+                            target_path = os.path.join(images_dir, filename)
+                            with open(target_path, 'wb') as target:
+                                shutil.copyfileobj(source, target)
+            
+            # Run analysis
+            results = analyze_images_with_evaluator(
+                images_dir,
+                patch_size=patch_size,
+                overlap=overlap,
+                rotation=rotation,
+                thumbnail_size=thumbnail_size
+            )
+            
+            # Filter response based on parameters
+            response = {
+                'success': True,
+                'message': 'Images analyzed successfully',
+                'summary': {
+                    'total_images': results['total_images'],
+                    'images_with_detections': results['images_with_detections'],
+                    'images_without_detections': results['images_without_detections'],
+                    'total_detections': results['total_detections'],
+                    'species_counts': results['species_counts']
+                },
+                'detections': results['detections'],
+                'processing_params': results['processing_params']
+            }
+            
+            if include_thumbnails:
+                response['thumbnails'] = results['thumbnails']
+            
+            if include_plots:
+                response['plots'] = results['plots']
+            
+            print(f"\n{'='*60}")
+            print(f"✓ Analysis complete!")
+            print(f"  Total detections: {results['total_detections']}")
+            print(f"  Images with animals: {results['images_with_detections']}/{results['total_images']}")
+            print(f"  Species found: {list(results['species_counts'].keys())}")
+            print(f"{'='*60}\n")
+            
+            return jsonify(response), 200
+            
+    except Exception as e:
+        print(f"Error processing request: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'Analysis failed',
+            'message': str(e)
+        }), 500
+
+
+if __name__ == "__main__":
+    print("\n" + "="*60)
+    print("Starting Flask server...")
+    print(f"Model: HerdNet with {num_classes} classes")
+    print(f"Device: {device}")
+    print(f"Classes: {list(ANIMAL_CLASSES.values())}")
+    print("="*60 + "\n")
+    app.run(host="0.0.0.0", port=8000, debug=True)

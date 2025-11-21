@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  animal-detection-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: animal-detection-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_APP=app.py
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Optional: Mount directories for persistent data
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
