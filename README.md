@@ -10,6 +10,8 @@ A Flask-based REST API for detecting and analyzing African wildlife in aerial/sa
 - 📍 **HerdNet Detection**: Precise point-based detection optimized for aerial imagery
 - 🗺️ **Large Image Support**: Processes large satellite images (6000x4000+) using intelligent stitching
 - 📦 **Batch Processing**: Upload ZIP files with multiple images for batch analysis
+- 🖼️ **Single Image Analysis**: Upload individual images (PNG, JPG, GIF, WebP, BMP, TIFF) for quick testing
+- ⚡ **Flexible Input**: Choose between ZIP (batch) or single image based on your needs
 
 ### Data Management
 - 💾 **Database Storage**: SQLite database stores all analysis tasks and complete results
@@ -213,6 +215,40 @@ Upload a ZIP file for HerdNet analysis.
   "processing_time_seconds": 45.8
 }
 ```
+
+### Analyze Single Image with YOLO
+
+**POST** `/analyze-single-image-yolo`
+
+Upload a single image for YOLOv11 analysis.
+
+**Parameters:**
+- `file`: Single image file (PNG, JPG, JPEG, GIF, WebP, BMP, TIFF) (required)
+- `conf_threshold`: Confidence threshold (default: 0.25)
+- `iou_threshold`: IOU threshold for NMS (default: 0.45)
+- `img_size`: Image size for inference (default: 640)
+- `include_annotated_images`: Include annotated images (default: true)
+
+**Response:** Same format as batch analysis, but with `total_images: 1`
+
+### Analyze Single Image with HerdNet
+
+**POST** `/analyze-single-image-herdnet`
+
+Upload a single image for HerdNet analysis (optimized for large aerial/satellite images).
+
+**Parameters:**
+- `file`: Single image file (PNG, JPG, JPEG, GIF, WebP, BMP, TIFF) (required)
+- `patch_size`: Patch size for stitching (default: 512)
+- `overlap`: Overlap for stitching (default: 160)
+- `rotation`: Number of 90-degree rotations (default: 0)
+- `thumbnail_size`: Size for thumbnails (default: 256)
+- `include_thumbnails`: Include thumbnails (default: true)
+- `include_plots`: Include detection plots (default: false)
+
+**Response:** Same format as batch analysis, but with `total_images: 1`
+
+**💡 Tip:** Use single image endpoints for quick testing or when you need real-time analysis without creating ZIP files!
 
 ### Get Tasks
 

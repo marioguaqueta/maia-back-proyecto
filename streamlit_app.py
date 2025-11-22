@@ -1,5 +1,5 @@
 """
-Streamlit Web Interface for Wildlife Detection API
+Interfaz Web Streamlit para API de Detección de Fauna Silvestre
 """
 
 import streamlit as st
@@ -14,20 +14,20 @@ import pandas as pd
 from datetime import datetime
 import os
 
-# Configuration - can be overridden via environment variable or Streamlit secrets
+# Configuración - puede ser sobrescrita por variable de entorno o secretos de Streamlit
 API_BASE_URL = os.getenv(
     "API_BASE_URL",
     st.secrets.get("API_BASE_URL", "http://localhost:8000")
 )
 
-# Page config
+# Configuración de página
 st.set_page_config(
-    page_title="African Wildlife Detection",
+    page_title="Detección de Fauna Africana",
     page_icon="🦁",
     layout="wide"
 )
 
-# Custom CSS
+# CSS personalizado
 st.markdown("""
 <style>
 .stApp {
@@ -40,7 +40,7 @@ st.markdown("""
     background-color: #f0f2f6;
 }
 
-/* Card styling for results */
+/* Estilos para tarjetas de resultados */
 .result-card {
     border: 2px solid #e0e0e0;
     border-radius: 12px;
@@ -91,7 +91,7 @@ st.markdown("""
     font-weight: 600;
 }
 
-/* Expander styling */
+/* Estilos para expandibles */
 .stExpander {
     border: 1px solid #e0e0e0;
     border-radius: 8px;
@@ -99,7 +99,7 @@ st.markdown("""
     margin-top: 10px;
 }
 
-/* Image container */
+/* Contenedor de imagen */
 .image-container {
     border-radius: 8px;
     overflow: hidden;
@@ -111,118 +111,156 @@ st.markdown("""
 
 
 def main():
-    """Main Streamlit app."""
-    st.title("🦁 African Wildlife Detection System")
-    st.markdown("Powered by YOLOv11 and HerdNet deep learning models")
+    """Aplicación principal de Streamlit."""
+    st.title("🦁 Sistema de Detección de Fauna Africana")
+    st.markdown("Impulsado por modelos de aprendizaje profundo YOLOv11 y HerdNet")
     
-    # Sidebar navigation
+    # Navegación en la barra lateral
     page = st.sidebar.selectbox(
-        "Navigation",
-        ["🎯 New Analysis", "📊 View Results", "📈 Statistics", "ℹ️ About"]
+        "Navegación",
+        ["🎯 Nuevo Análisis", "📊 Ver Resultados", "📈 Estadísticas", "ℹ️ Acerca de"]
     )
     
-    if page == "🎯 New Analysis":
+    if page == "🎯 Nuevo Análisis":
         new_analysis_page()
-    elif page == "📊 View Results":
+    elif page == "📊 Ver Resultados":
         view_results_page()
-    elif page == "📈 Statistics":
+    elif page == "📈 Estadísticas":
         statistics_page()
-    elif page == "ℹ️ About":
+    elif page == "ℹ️ Acerca de":
         about_page()
 
 
 def new_analysis_page():
-    """Page for creating new analysis."""
-    st.header("🎯 New Wildlife Detection Analysis")
+    """Página para crear nuevo análisis."""
+    st.header("🎯 Nuevo Análisis de Detección de Fauna")
     
-    # Check API health
+    # Verificar estado de la API
     try:
         response = requests.get(f"{API_BASE_URL}/health")
         health = response.json()
         
         col1, col2 = st.columns(2)
         with col1:
-            st.success(f"✓ API Status: {health['status']}")
+            st.success(f"✓ Estado de la API: {health['status']}")
         with col2:
             models_info = health.get('models', {})
-            yolo_status = "✓ Loaded" if models_info.get('yolov11', {}).get('loaded') else "✗ Not loaded"
-            herdnet_status = "✓ Loaded" if models_info.get('herdnet', {}).get('loaded') else "✗ Not loaded"
+            yolo_status = "✓ Cargado" if models_info.get('yolov11', {}).get('loaded') else "✗ No cargado"
+            herdnet_status = "✓ Cargado" if models_info.get('herdnet', {}).get('loaded') else "✗ No cargado"
             st.info(f"YOLOv11: {yolo_status} | HerdNet: {herdnet_status}")
     except:
-        st.error("❌ Cannot connect to API. Please ensure the backend is running.")
+        st.error("❌ No se puede conectar a la API. Por favor, asegúrese de que el backend esté en ejecución.")
         return
     
     st.markdown("---")
     
-    # File upload
-    st.subheader("📁 Upload Images")
-    uploaded_file = st.file_uploader(
-        "Upload a ZIP file containing images",
-        type=['zip'],
-        help="Upload a ZIP archive with wildlife images for analysis"
+    # Carga de archivos
+    st.subheader("📁 Cargar Imágenes")
+    
+    # Opción de tipo de archivo
+    upload_type = st.radio(
+        "Tipo de archivo:",
+        ["📦 Archivo ZIP (múltiples imágenes)", "🖼️ Imagen Individual"],
+        horizontal=True
     )
+    
+    # File uploader según el tipo
+    if "ZIP" in upload_type:
+        uploaded_file = st.file_uploader(
+            "Sube un archivo ZIP con imágenes",
+            type=['zip'],
+            help="Sube un archivo ZIP con imágenes de fauna silvestre para análisis por lotes"
+        )
+        file_type = 'zip'
+    else:
+        uploaded_file = st.file_uploader(
+            "Sube una imagen",
+            type=['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff'],
+            help="Sube una imagen individual de fauna silvestre para analizar"
+        )
+        file_type = 'image'
     
     if not uploaded_file:
-        st.info("👆 Please upload a ZIP file to continue")
+        if file_type == 'zip':
+            st.info("👆 Por favor sube un archivo ZIP para continuar")
+        else:
+            st.info("👆 Por favor sube una imagen para continuar")
         return
     
-    st.success(f"✓ File uploaded: {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
+    # Mostrar información del archivo
+    file_size_kb = uploaded_file.size / 1024
+    file_size_mb = file_size_kb / 1024
     
-    # Model selection
-    st.subheader("🤖 Model Selection")
+    if file_size_mb > 1:
+        size_display = f"{file_size_mb:.1f} MB"
+    else:
+        size_display = f"{file_size_kb:.1f} KB"
+    
+    st.success(f"✓ Archivo cargado: {uploaded_file.name} ({size_display})")
+    
+    # Selección de modelo
+    st.subheader("🤖 Selección de Modelo")
     model_choice = st.radio(
-        "Choose detection model:",
-        ["YOLOv11 (Fast, Bounding Boxes)", "HerdNet (Aerial, Point Detection)"],
-        help="YOLOv11: Fast detection with bounding boxes | HerdNet: Optimized for aerial imagery with point detection"
+        "Elige el modelo de detección:",
+        ["YOLOv11 (Rápido, Cajas Delimitadoras)", "HerdNet (Aéreo, Detección por Puntos)"],
+        help="YOLOv11: Detección rápida con cajas delimitadoras | HerdNet: Optimizado para imágenes aéreas con detección por puntos"
     )
     
-    # Parameters based on model
-    st.subheader("⚙️ Parameters")
+    # Parámetros según el modelo
+    st.subheader("⚙️ Parámetros")
     
     if "YOLO" in model_choice:
         col1, col2, col3 = st.columns(3)
         with col1:
-            conf_threshold = st.slider("Confidence Threshold", 0.1, 0.9, 0.25, 0.05)
+            conf_threshold = st.slider("Umbral de Confianza", 0.1, 0.9, 0.25, 0.05)
         with col2:
-            iou_threshold = st.slider("IOU Threshold", 0.1, 0.9, 0.45, 0.05)
+            iou_threshold = st.slider("Umbral IOU", 0.1, 0.9, 0.45, 0.05)
         with col3:
-            img_size = st.selectbox("Image Size", [416, 480, 640, 800, 960, 1280], index=2)
+            img_size = st.selectbox("Tamaño de Imagen", [416, 480, 640, 800, 960, 1280], index=2)
         
-        include_annotated = st.checkbox("Include annotated images", value=True)
+        include_annotated = st.checkbox("Incluir imágenes anotadas", value=True)
         
     else:  # HerdNet
         col1, col2 = st.columns(2)
         with col1:
-            patch_size = st.selectbox("Patch Size", [384, 512, 768, 1024], index=1)
-            rotation = st.selectbox("Rotation (90° steps)", [0, 1, 2, 3], index=0)
+            patch_size = st.selectbox("Tamaño de Parche", [384, 512, 768, 1024], index=1)
+            rotation = st.selectbox("Rotación (pasos de 90°)", [0, 1, 2, 3], index=0)
         with col2:
-            overlap = st.slider("Overlap (pixels)", 0, 300, 160, 16)
-            thumbnail_size = st.slider("Thumbnail Size", 128, 512, 256, 32)
+            overlap = st.slider("Superposición (píxeles)", 0, 300, 160, 16)
+            thumbnail_size = st.slider("Tamaño de Miniatura", 128, 512, 256, 32)
         
         col3, col4 = st.columns(2)
         with col3:
-            include_thumbnails = st.checkbox("Include thumbnails", value=True)
+            include_thumbnails = st.checkbox("Incluir miniaturas", value=True)
         with col4:
-            include_plots = st.checkbox("Include detection plots", value=False)
+            include_plots = st.checkbox("Incluir gráficos de detección", value=False)
     
-    # Run analysis button
+    # Botón para ejecutar análisis
     st.markdown("---")
-    if st.button("🚀 Run Analysis", type="primary", use_container_width=True):
-        with st.spinner("Processing images... This may take a few minutes."):
+    if st.button("🚀 Ejecutar Análisis", type="primary", use_container_width=True):
+        spinner_text = "Procesando imagen..." if file_type == 'image' else "Procesando imágenes... Esto puede tomar algunos minutos."
+        
+        with st.spinner(spinner_text):
             try:
-                # Prepare request
-                files = {'file': uploaded_file.getvalue()}
-                
+                # Determinar endpoint según tipo de archivo y modelo
                 if "YOLO" in model_choice:
-                    endpoint = f"{API_BASE_URL}/analyze-yolo"
+                    if file_type == 'zip':
+                        endpoint = f"{API_BASE_URL}/analyze-yolo"
+                    else:
+                        endpoint = f"{API_BASE_URL}/analyze-single-image-yolo"
+                    
                     data = {
                         'conf_threshold': conf_threshold,
                         'iou_threshold': iou_threshold,
                         'img_size': img_size,
                         'include_annotated_images': str(include_annotated).lower()
                     }
-                else:
-                    endpoint = f"{API_BASE_URL}/analyze-image"
+                else:  # HerdNet
+                    if file_type == 'zip':
+                        endpoint = f"{API_BASE_URL}/analyze-image"
+                    else:
+                        endpoint = f"{API_BASE_URL}/analyze-single-image-herdnet"
+                    
                     data = {
                         'patch_size': patch_size,
                         'overlap': overlap,
@@ -232,38 +270,39 @@ def new_analysis_page():
                         'include_plots': str(include_plots).lower()
                     }
                 
-                # Make request
+                # Hacer solicitud
                 response = requests.post(endpoint, files={'file': uploaded_file}, data=data)
                 
                 if response.status_code == 200:
                     result = response.json()
-                    display_results(result, model_choice)
+                    display_results(result, model_choice, file_type)
                 else:
-                    st.error(f"❌ Analysis failed: {response.json().get('message', 'Unknown error')}")
+                    error_msg = response.json().get('message', response.json().get('error', 'Error desconocido'))
+                    st.error(f"❌ Análisis fallido: {error_msg}")
                     
             except Exception as e:
                 st.error(f"❌ Error: {str(e)}")
 
 
 def create_detections_table(result, model_choice):
-    """Create a table showing detections per image and species."""
+    """Crear una tabla mostrando detecciones por imagen y especie."""
     detections = result.get('detections', [])
     
     if not detections:
         return None
     
-    # Get all species from the result
+    # Obtener todas las especies del resultado
     species_counts = result.get('summary', {}).get('species_counts', {})
     all_species = sorted(species_counts.keys())
     
-    # Create a dictionary to store counts per image
+    # Crear un diccionario para almacenar conteos por imagen
     image_data = {}
     
-    # Process detections based on model type
+    # Procesar detecciones según el tipo de modelo
     if "YOLO" in model_choice:
         for det in detections:
-            img_name = det.get('image', 'Unknown')
-            species = det.get('class_name', 'Unknown')
+            img_name = det.get('image', 'Desconocido')
+            species = det.get('class_name', 'Desconocido')
             
             if img_name not in image_data:
                 image_data[img_name] = {sp: 0 for sp in all_species}
@@ -273,8 +312,8 @@ def create_detections_table(result, model_choice):
             image_data[img_name]['Total'] += 1
     else:  # HerdNet
         for det in detections:
-            img_name = det.get('images', 'Unknown')
-            species = det.get('species', 'Unknown')
+            img_name = det.get('images', 'Desconocido')
+            species = det.get('species', 'Desconocido')
             
             if img_name not in image_data:
                 image_data[img_name] = {sp: 0 for sp in all_species}
@@ -283,50 +322,50 @@ def create_detections_table(result, model_choice):
             image_data[img_name][species] = image_data[img_name].get(species, 0) + 1
             image_data[img_name]['Total'] += 1
     
-    # Convert to DataFrame
+    # Convertir a DataFrame
     rows = []
     for img_name, counts in image_data.items():
-        row = {'Image': img_name, 'Total': counts['Total']}
+        row = {'Imagen': img_name, 'Total': counts['Total']}
         for species in all_species:
             row[species.capitalize()] = counts.get(species, 0)
         rows.append(row)
     
     df = pd.DataFrame(rows)
     
-    # Reorder columns: Image, Total, then species
-    cols = ['Image', 'Total'] + [sp.capitalize() for sp in all_species]
+    # Reordenar columnas: Imagen, Total, luego especies
+    cols = ['Imagen', 'Total'] + [sp.capitalize() for sp in all_species]
     df = df[cols]
     
     return df
 
 
-@st.dialog("Image Viewer with Zoom", width="large")
+@st.dialog("Visor de Imagen con Zoom", width="large")
 def show_image_modal(img_data, img_name, model_type):
-    """Display image in a modal with zoom and pan capabilities."""
+    """Mostrar imagen en un modal con capacidades de zoom y panorámica."""
     st.subheader(f"📷 {img_name}")
     
-    # Decode image
+    # Decodificar imagen
     if model_type == "yolo":
         img_bytes = base64.b64decode(img_data['annotated_image_base64'])
         detections_count = img_data.get('detections_count', 0)
-        st.info(f"🎯 {detections_count} detections")
+        st.info(f"🎯 {detections_count} detecciones")
     else:  # herdnet plot
         img_bytes = base64.b64decode(img_data['plot_base64'])
-        st.info(f"📍 HerdNet Detection Plot")
+        st.info(f"📍 Gráfico de Detección HerdNet")
     
     img = Image.open(BytesIO(img_bytes))
     
-    # Get image dimensions
+    # Obtener dimensiones de la imagen
     width, height = img.size
-    st.caption(f"Original size: {width} × {height} pixels")
+    st.caption(f"Tamaño original: {width} × {height} píxeles")
     
-    # Zoom controls
+    # Controles de zoom
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
         zoom_level = st.slider(
-            "🔍 Zoom Level",
+            "🔍 Nivel de Zoom",
             min_value=50,
             max_value=200,
             value=100,
@@ -335,7 +374,7 @@ def show_image_modal(img_data, img_name, model_type):
             key=f"zoom_{img_name}"
         )
     
-    # Calculate new dimensions based on zoom
+    # Calcular nuevas dimensiones según el zoom
     new_width = int(width * zoom_level / 100)
     new_height = int(height * zoom_level / 100)
     
@@ -345,12 +384,12 @@ def show_image_modal(img_data, img_name, model_type):
     else:
         st.image(img, use_column_width=True)
     
-    # Download button
+    # Botón de descarga
     st.markdown("---")
     buf = BytesIO()
     img.save(buf, format="PNG")
     btn = st.download_button(
-        label="⬇️ Download Image",
+        label="⬇️ Descargar Imagen",
         data=buf.getvalue(),
         file_name=f"{img_name}",
         mime="image/png",
@@ -358,48 +397,56 @@ def show_image_modal(img_data, img_name, model_type):
     )
 
 
-def display_results(result, model_choice):
-    """Display analysis results."""
-    st.success("✅ Analysis Complete!")
+def display_results(result, model_choice, file_type='zip'):
+    """Mostrar resultados del análisis."""
+    st.success("✅ ¡Análisis Completo!")
     
-    # Task ID
-    st.info(f"📋 Task ID: `{result.get('task_id', 'N/A')}` - Save this to retrieve results later!")
+    # ID de tarea
+    st.info(f"📋 ID de Tarea: `{result.get('task_id', 'N/A')}` - ¡Guarda esto para recuperar resultados después!")
     
-    # Summary statistics
-    st.subheader("📊 Summary")
+    # Estadísticas resumen
+    st.subheader("📊 Resumen")
     summary = result.get('summary', {})
     
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Images", summary.get('total_images', 0))
-    col2.metric("Total Detections", summary.get('total_detections', 0))
-    col3.metric("Images with Animals", summary.get('images_with_animals', summary.get('images_with_detections', 0)))
-    col4.metric("Processing Time", f"{result.get('processing_time_seconds', 0):.1f}s")
+    # Ajustar métricas según el tipo de archivo
+    if file_type == 'image':
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total de Detecciones", summary.get('total_detections', 0))
+        col2.metric("Especies Detectadas", len(summary.get('species_counts', {})))
+        col3.metric("Tiempo de Procesamiento", f"{result.get('processing_time_seconds', 0):.1f}s")
+    else:
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total de Imágenes", summary.get('total_images', 0))
+        col2.metric("Total de Detecciones", summary.get('total_detections', 0))
+        col3.metric("Imágenes con Animales", summary.get('images_with_animals', summary.get('images_with_detections', 0)))
+        col4.metric("Tiempo de Procesamiento", f"{result.get('processing_time_seconds', 0):.1f}s")
     
-    # Species distribution
+    # Distribución de especies
     if summary.get('species_counts'):
-        st.subheader("🦁 Species Distribution")
-        species_df = pd.DataFrame(list(summary['species_counts'].items()), columns=['Species', 'Count'])
+        st.subheader("🦁 Distribución de Especies")
+        species_df = pd.DataFrame(list(summary['species_counts'].items()), columns=['Especie', 'Cantidad'])
         
         col1, col2 = st.columns([1, 1])
         with col1:
-            fig = px.bar(species_df, x='Species', y='Count', color='Species')
+            fig = px.bar(species_df, x='Especie', y='Cantidad', color='Especie')
+            fig.update_layout(showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
         with col2:
-            fig = px.pie(species_df, names='Species', values='Count')
+            fig = px.pie(species_df, names='Especie', values='Cantidad')
             st.plotly_chart(fig, use_container_width=True)
     
     # ========================================
-    # Image Cards with Results
+    # Tarjetas de Imágenes con Resultados
     # ========================================
     
-    # Annotated images (YOLO) - Card Layout
+    # Imágenes anotadas (YOLO) - Diseño de tarjetas
     if 'annotated_images' in result:
-        st.subheader("🖼️ Annotated Images - Results")
+        st.subheader("🖼️ Imágenes Anotadas - Resultados")
         
-        # Get detections for table
+        # Obtener detecciones para tabla
         all_detections = result.get('detections', [])
         
-        # Create cards in a 2-column grid
+        # Crear tarjetas en cuadrícula de 2 columnas
         for idx in range(0, len(result['annotated_images']), 2):
             cols = st.columns(2)
             
@@ -411,60 +458,60 @@ def display_results(result, model_choice):
                 img_data = result['annotated_images'][img_idx]
                 
                 with col:
-                    # Create card container
+                    # Crear contenedor de tarjeta
                     with st.container():
-                        # Card header
+                        # Encabezado de tarjeta
                         st.markdown(f"""
                         <div class="result-card">
                             <div class="card-header">📷 {img_data['image_name']}</div>
                             <div class="card-subtitle">
-                                <span class="detection-badge">🎯 {img_data['detections_count']} detections</span>
+                                <span class="detection-badge">🎯 {img_data['detections_count']} detecciones</span>
                                 <span class="size-badge">📐 {img_data.get('original_size', {}).get('width', '?')} × {img_data.get('original_size', {}).get('height', '?')} px</span>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Display annotated image
+                        # Mostrar imagen anotada
                         img_bytes = base64.b64decode(img_data['annotated_image_base64'])
                         img = Image.open(BytesIO(img_bytes))
                         
-                        # Image container
+                        # Contenedor de imagen
                         st.markdown('<div class="image-container">', unsafe_allow_html=True)
                         st.image(img, use_container_width=True)
                         st.markdown('</div>', unsafe_allow_html=True)
                         
-                        # Get detections for this image
+                        # Obtener detecciones para esta imagen
                         image_detections = [d for d in all_detections if d.get('image') == img_data['image_name']]
                         
-                        # Collapsible detection table
-                        with st.expander(f"📊 View Detection Details ({len(image_detections)} items)", expanded=False):
+                        # Tabla de detección colapsable
+                        with st.expander(f"📊 Ver Detalles de Detección ({len(image_detections)} elementos)", expanded=False):
                             if image_detections:
-                                # Create DataFrame for detections
+                                # Crear DataFrame para detecciones
                                 det_data = []
                                 for det in image_detections:
                                     det_data.append({
-                                        'Species': det.get('class_name', 'Unknown'),
-                                        'Confidence': f"{det.get('confidence', 0):.2%}",
+                                        'Especie': det.get('class_name', 'Desconocido'),
+                                        'Confianza': f"{det.get('confidence', 0):.2%}",
                                         'X': f"{det.get('center', {}).get('x', 0):.1f}",
                                         'Y': f"{det.get('center', {}).get('y', 0):.1f}",
-                                        'Width': f"{det.get('bbox', {}).get('x2', 0) - det.get('bbox', {}).get('x1', 0):.1f}",
-                                        'Height': f"{det.get('bbox', {}).get('y2', 0) - det.get('bbox', {}).get('y1', 0):.1f}"
+                                        'Ancho': f"{det.get('bbox', {}).get('x2', 0) - det.get('bbox', {}).get('x1', 0):.1f}",
+                                        'Alto': f"{det.get('bbox', {}).get('y2', 0) - det.get('bbox', {}).get('y1', 0):.1f}"
                                     })
                                 
                                 det_df = pd.DataFrame(det_data)
                                 st.dataframe(det_df, use_container_width=True, hide_index=True)
                             else:
-                                st.info("No detections for this image")
+                                st.info("No hay detecciones para esta imagen")
                         
-                        # Action buttons
+                        # Botones de acción
                         col_btn1, col_btn2 = st.columns(2)
                         with col_btn1:
-                            if st.button(f"🔍 View Full Size", key=f"view_yolo_{img_idx}", use_container_width=True):
+                            if st.button(f"🔍 Ver Tamaño Completo", key=f"view_yolo_{img_idx}", use_container_width=True):
                                 show_image_modal(img_data, img_data['image_name'], "yolo")
                         
                         with col_btn2:
                             st.download_button(
-                                label="⬇️ Download Image",
+                                label="⬇️ Descargar Imagen",
                                 data=img_bytes,
                                 file_name=img_data['image_name'],
                                 mime="image/png",
@@ -474,14 +521,14 @@ def display_results(result, model_choice):
                         
                         st.markdown("<br>", unsafe_allow_html=True)
     
-    # Detection plots (HerdNet) - Card Layout
+    # Gráficos de detección (HerdNet) - Diseño de tarjetas
     if 'plots' in result:
-        st.subheader("🗺️ Detection Plots - Results")
+        st.subheader("🗺️ Gráficos de Detección - Resultados")
         
-        # Get detections for table
+        # Obtener detecciones para tabla
         all_detections = result.get('detections', [])
         
-        # Create cards in a 2-column grid
+        # Crear tarjetas en cuadrícula de 2 columnas
         for idx in range(0, len(result['plots']), 2):
             cols = st.columns(2)
             
@@ -493,37 +540,37 @@ def display_results(result, model_choice):
                 plot_data = result['plots'][plot_idx]
                 
                 with col:
-                    # Create card container
+                    # Crear contenedor de tarjeta
                     with st.container():
-                        # Card header
+                        # Encabezado de tarjeta
                         st.markdown(f"""
                         <div class="result-card">
                             <div class="card-header">📍 {plot_data['image_name']}</div>
-                            <div class="card-subtitle">HerdNet Detection Plot</div>
+                            <div class="card-subtitle">Gráfico de Detección HerdNet</div>
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Display plot
+                        # Mostrar gráfico
                         img_bytes = base64.b64decode(plot_data['plot_base64'])
                         img = Image.open(BytesIO(img_bytes))
                         
-                        # Image container
+                        # Contenedor de imagen
                         st.markdown('<div class="image-container">', unsafe_allow_html=True)
                         st.image(img, use_container_width=True)
                         st.markdown('</div>', unsafe_allow_html=True)
                         
-                        # Get detections for this image
+                        # Obtener detecciones para esta imagen
                         image_detections = [d for d in all_detections if d.get('images') == plot_data['image_name']]
                         
-                        # Collapsible detection table
-                        with st.expander(f"📊 View Detection Details ({len(image_detections)} items)", expanded=False):
+                        # Tabla de detección colapsable
+                        with st.expander(f"📊 Ver Detalles de Detección ({len(image_detections)} elementos)", expanded=False):
                             if image_detections:
-                                # Create DataFrame for detections
+                                # Crear DataFrame para detecciones
                                 det_data = []
                                 for det in image_detections:
                                     det_data.append({
-                                        'Species': det.get('species', 'Unknown'),
-                                        'Confidence': f"{det.get('scores', 0):.2%}",
+                                        'Especie': det.get('species', 'Desconocido'),
+                                        'Confianza': f"{det.get('scores', 0):.2%}",
                                         'X': f"{det.get('x', 0):.1f}",
                                         'Y': f"{det.get('y', 0):.1f}"
                                     })
@@ -531,17 +578,17 @@ def display_results(result, model_choice):
                                 det_df = pd.DataFrame(det_data)
                                 st.dataframe(det_df, use_container_width=True, hide_index=True)
                             else:
-                                st.info("No detections for this image")
+                                st.info("No hay detecciones para esta imagen")
                         
-                        # Action buttons
+                        # Botones de acción
                         col_btn1, col_btn2 = st.columns(2)
                         with col_btn1:
-                            if st.button(f"🔍 View Full Size", key=f"view_plot_{plot_idx}", use_container_width=True):
+                            if st.button(f"🔍 Ver Tamaño Completo", key=f"view_plot_{plot_idx}", use_container_width=True):
                                 show_image_modal(plot_data, plot_data['image_name'], "herdnet")
                         
                         with col_btn2:
                             st.download_button(
-                                label="⬇️ Download Plot",
+                                label="⬇️ Descargar Gráfico",
                                 data=img_bytes,
                                 file_name=f"plot_{plot_data['image_name']}",
                                 mime="image/png",
@@ -551,11 +598,11 @@ def display_results(result, model_choice):
                         
                         st.markdown("<br>", unsafe_allow_html=True)
     
-    # Thumbnails (HerdNet) - keep existing thumbnail view
+    # Miniaturas (HerdNet) - mantener vista de miniaturas existente
     if 'thumbnails' in result:
-        st.subheader("🔍 Animal Thumbnails")
+        st.subheader("🔍 Miniaturas de Animales")
         cols = st.columns(5)
-        for idx, thumb in enumerate(result['thumbnails'][:20]):  # Show first 20
+        for idx, thumb in enumerate(result['thumbnails'][:20]):  # Mostrar primeras 20
             with cols[idx % 5]:
                 img_bytes = base64.b64decode(thumb['thumbnail_base64'])
                 img = Image.open(BytesIO(img_bytes))
@@ -563,24 +610,24 @@ def display_results(result, model_choice):
 
 
 def view_results_page():
-    """Page for viewing past results."""
-    st.header("📊 View Past Results")
+    """Página para ver resultados pasados."""
+    st.header("📊 Ver Resultados Anteriores")
     
-    # Filters
+    # Filtros
     col1, col2, col3 = st.columns(3)
     with col1:
-        model_filter = st.selectbox("Model", ["All", "yolo", "herdnet"])
+        model_filter = st.selectbox("Modelo", ["Todos", "yolo", "herdnet"])
     with col2:
-        status_filter = st.selectbox("Status", ["All", "completed", "processing", "failed"])
+        status_filter = st.selectbox("Estado", ["Todos", "completed", "processing", "failed"])
     with col3:
-        limit = st.number_input("Limit", 1, 100, 20)
+        limit = st.number_input("Límite", 1, 100, 20)
     
-    # Fetch tasks
+    # Obtener tareas
     try:
         params = {'limit': limit}
-        if model_filter != "All":
+        if model_filter != "Todos":
             params['model_type'] = model_filter
-        if status_filter != "All":
+        if status_filter != "Todos":
             params['status'] = status_filter
         
         response = requests.get(f"{API_BASE_URL}/tasks", params=params)
@@ -589,110 +636,113 @@ def view_results_page():
             tasks = data.get('tasks', [])
             
             if not tasks:
-                st.info("No tasks found")
+                st.info("No se encontraron tareas")
                 return
             
-            st.success(f"Found {len(tasks)} tasks")
+            st.success(f"Se encontraron {len(tasks)} tareas")
             
-            # Display tasks
+            # Mostrar tareas
             for task in tasks:
-                with st.expander(f"Task {task['task_id'][:8]}... - {task.get('filename', 'N/A')} ({task['status']})"):
+                status_emoji = {"completed": "✅", "processing": "⏳", "failed": "❌"}.get(task['status'], "❓")
+                with st.expander(f"{status_emoji} Tarea {task['task_id'][:8]}... - {task.get('filename', 'N/A')} ({task['status']})"):
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.write(f"**Model:** {task['model_type']}")
-                        st.write(f"**Status:** {task['status']}")
-                        st.write(f"**Created:** {task['created_at']}")
+                        st.write(f"**Modelo:** {task['model_type']}")
+                        st.write(f"**Estado:** {task['status']}")
+                        st.write(f"**Creado:** {task['created_at']}")
                     with col2:
-                        st.write(f"**Images:** {task.get('num_images', 0)}")
-                        st.write(f"**Detections:** {task.get('total_detections', 0)}")
-                        st.write(f"**Time:** {task.get('processing_time_seconds', 0):.1f}s")
+                        st.write(f"**Imágenes:** {task.get('num_images', 0)}")
+                        st.write(f"**Detecciones:** {task.get('total_detections', 0)}")
+                        st.write(f"**Tiempo:** {task.get('processing_time_seconds', 0):.1f}s")
                     
-                    # View full results button
-                    if st.button(f"View Full Results", key=task['task_id']):
-                        # Fetch full task
+                    # Botón para ver resultados completos
+                    if st.button(f"Ver Resultados Completos", key=task['task_id']):
+                        # Obtener tarea completa
                         task_response = requests.get(f"{API_BASE_URL}/tasks/{task['task_id']}")
                         if task_response.status_code == 200:
                             full_task = task_response.json()['task']
                             st.json(full_task.get('result_data', {}))
         else:
-            st.error(f"Failed to fetch tasks: {response.status_code}")
+            st.error(f"Error al obtener tareas: {response.status_code}")
     except Exception as e:
         st.error(f"Error: {str(e)}")
 
 
 def statistics_page():
-    """Page for database statistics."""
-    st.header("📈 Database Statistics")
+    """Página de estadísticas de la base de datos."""
+    st.header("📈 Estadísticas de la Base de Datos")
     
     try:
         response = requests.get(f"{API_BASE_URL}/database/stats")
         if response.status_code == 200:
             stats = response.json()['statistics']
             
-            # Overview
+            # Resumen general
             col1, col2, col3 = st.columns(3)
-            col1.metric("Total Tasks", stats.get('total_tasks', 0))
-            col2.metric("Total Detections", stats.get('total_detections', 0))
-            col3.metric("Completed", stats.get('tasks_by_status', {}).get('completed', 0))
+            col1.metric("Total de Tareas", stats.get('total_tasks', 0))
+            col2.metric("Total de Detecciones", stats.get('total_detections', 0))
+            col3.metric("Completadas", stats.get('tasks_by_status', {}).get('completed', 0))
             
-            # Tasks by model
+            # Tareas por modelo
             if stats.get('tasks_by_model'):
-                st.subheader("Tasks by Model")
-                model_df = pd.DataFrame(list(stats['tasks_by_model'].items()), columns=['Model', 'Count'])
-                fig = px.bar(model_df, x='Model', y='Count', color='Model')
+                st.subheader("Tareas por Modelo")
+                model_df = pd.DataFrame(list(stats['tasks_by_model'].items()), columns=['Modelo', 'Cantidad'])
+                fig = px.bar(model_df, x='Modelo', y='Cantidad', color='Modelo')
+                fig.update_layout(showlegend=False)
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Species distribution
+            # Distribución de especies
             if stats.get('species_distribution'):
-                st.subheader("Species Distribution (All Time)")
-                species_df = pd.DataFrame(list(stats['species_distribution'].items()), columns=['Species', 'Count'])
-                species_df = species_df.sort_values('Count', ascending=False)
+                st.subheader("Distribución de Especies (Histórico)")
+                species_df = pd.DataFrame(list(stats['species_distribution'].items()), columns=['Especie', 'Cantidad'])
+                species_df = species_df.sort_values('Cantidad', ascending=False)
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    fig = px.bar(species_df, x='Species', y='Count', color='Species')
+                    fig = px.bar(species_df, x='Especie', y='Cantidad', color='Especie')
+                    fig.update_layout(showlegend=False)
                     st.plotly_chart(fig, use_container_width=True)
                 with col2:
-                    fig = px.pie(species_df, names='Species', values='Count')
+                    fig = px.pie(species_df, names='Especie', values='Cantidad')
                     st.plotly_chart(fig, use_container_width=True)
         else:
-            st.error("Failed to fetch statistics")
+            st.error("Error al obtener estadísticas")
     except Exception as e:
         st.error(f"Error: {str(e)}")
 
 
 def about_page():
-    """About page with model information."""
-    st.header("ℹ️ About")
+    """Página acerca de con información de modelos."""
+    st.header("ℹ️ Acerca de")
     
     st.markdown("""
-    ## African Wildlife Detection System
+    ## Sistema de Detección de Fauna Africana
     
-    This system uses state-of-the-art deep learning models to detect and count African wildlife in aerial and satellite imagery.
+    Este sistema utiliza modelos de aprendizaje profundo de última generación para detectar y contar fauna africana en imágenes aéreas y satelitales.
     
-    ### Models
+    ### Modelos
     
     #### 🎯 YOLOv11
-    - **Type:** Object detection with bounding boxes
-    - **Speed:** Fast (1-2 seconds per image)
-    - **Best for:** Standard images, real-time detection
-    - **Output:** Bounding boxes around animals
+    - **Tipo:** Detección de objetos con cajas delimitadoras
+    - **Velocidad:** Rápido (1-2 segundos por imagen)
+    - **Mejor para:** Imágenes estándar, detección en tiempo real
+    - **Salida:** Cajas delimitadoras alrededor de los animales
     
     #### 📍 HerdNet
-    - **Type:** Point-based detection
-    - **Speed:** Moderate (depends on image size)
-    - **Best for:** Large aerial/satellite images
-    - **Output:** Center points, thumbnails, and plots
+    - **Tipo:** Detección basada en puntos
+    - **Velocidad:** Moderada (depende del tamaño de la imagen)
+    - **Mejor para:** Imágenes aéreas/satelitales grandes
+    - **Salida:** Puntos centrales, miniaturas y gráficos
     
-    ### Supported Species
-    1. Buffalo (*Syncerus caffer*)
-    2. Elephant (*Loxodonta africana*)
+    ### Especies Soportadas
+    1. Búfalo (*Syncerus caffer*)
+    2. Elefante (*Loxodonta africana*)
     3. Kob (*Kobus kob*)
     4. Topi (*Damaliscus lunatus*)
-    5. Warthog (*Phacochoerus africanus*)
-    6. Waterbuck (*Kobus ellipsiprymnus*)
+    5. Jabalí Verrugoso (*Phacochoerus africanus*)
+    6. Antílope Acuático (*Kobus ellipsiprymnus*)
     
-    ### Citations
+    ### Citas
     
     **HerdNet:**
     ```
@@ -706,6 +756,18 @@ def about_page():
     Ultralytics YOLOv11 (2024)
     https://github.com/ultralytics/ultralytics
     ```
+    
+    ---
+    
+    ### Contacto y Soporte
+    
+    Para preguntas, sugerencias o reportar problemas, por favor contacta al equipo de desarrollo.
+    
+    ### Versión
+    
+    **Versión:** 2.1.0  
+    **Última Actualización:** Noviembre 2024  
+    **Estado:** Producción
     """)
 
 

@@ -911,6 +911,499 @@ def analyze_image_endpoint():
         }), 500
 
 
+@app.route("/analyze-single-image-yolo", methods=["POST"])
+def analyze_single_image_yolo_endpoint():
+    """
+    Analyze a single image using YOLOv11 model
+    
+    Request:
+        - file: Single image file (multipart/form-data)
+        - conf_threshold: Confidence threshold for detections (optional, default 0.25)
+        - iou_threshold: IOU threshold for NMS (optional, default 0.45)
+        - img_size: Image size for inference (optional, default 640)
+        - include_annotated_images: Include annotated images with bboxes (optional, default true)
+    
+    Returns:
+        JSON with task_id, detection results, and statistics
+    """
+    task_id = None
+    start_time = time.time()
+    
+    try:
+        # Check if YOLO model is loaded
+        if yolo_model is None:
+            return jsonify({'error': 'YOLOv11 model not available'}), 503
+        
+        # Check if file is present
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Check if file is an image
+        if not allowed_image(file.filename):
+            return jsonify({'error': 'File must be an image (png, jpg, jpeg, gif, webp, bmp)'}), 400
+        
+        # Get optional parameters
+        conf_threshold = float(request.form.get('conf_threshold', 0.25))
+        iou_threshold = float(request.form.get('iou_threshold', 0.45))
+        img_size = int(request.form.get('img_size', 640))
+        include_annotated = request.form.get('include_annotated_images', 'true').lower() == 'true'
+        
+        # Generate task ID
+        task_id = generate_task_id()
+        
+        print(f"\n{'='*60}")
+        print(f"YOLO SINGLE IMAGE ANALYSIS")
+        print(f"Task ID: {task_id}")
+        print(f"Filename: {file.filename}")
+        print(f"Confidence: {conf_threshold}, IOU: {iou_threshold}, Size: {img_size}")
+        print(f"{'='*60}\n")
+        
+        # Save task to database (status: processing)
+        save_task(
+            task_id=task_id,
+            model_type='yolo',
+            filename=file.filename,
+            num_images=1,
+            processing_params={
+                'conf_threshold': conf_threshold,
+                'iou_threshold': iou_threshold,
+                'img_size': img_size,
+                'include_annotated_images': include_annotated
+            }
+        )
+        
+        # Create temp directory for processing
+        temp_dir = tempfile.mkdtemp()
+        
+        try:
+            # Save uploaded image
+            image_filename = secure_filename(file.filename)
+            image_path = os.path.join(temp_dir, image_filename)
+            file.save(image_path)
+            
+            # Process the image
+            print(f"Processing image: {image_filename}")
+            
+            # Run YOLO inference
+            results = yolo_model.predict(
+                source=image_path,
+                conf=conf_threshold,
+                iou=iou_threshold,
+                imgsz=img_size,
+                save=False,
+                verbose=False
+            )
+            
+            # Process results
+            result = results[0]
+            boxes = result.boxes
+            
+            # Extract detections
+            detections = []
+            species_counts = {}
+            
+            for box in boxes:
+                cls_id = int(box.cls[0].item())
+                conf = float(box.conf[0].item())
+                xyxy = box.xyxy[0].tolist()
+                
+                # Get class name
+                class_name = result.names[cls_id]
+                
+                # Count species
+                species_counts[class_name] = species_counts.get(class_name, 0) + 1
+                
+                # Calculate center and dimensions
+                x1, y1, x2, y2 = xyxy
+                center_x = (x1 + x2) / 2
+                center_y = (y1 + y2) / 2
+                width = x2 - x1
+                height = y2 - y1
+                
+                detection = {
+                    'image': image_filename,
+                    'class_id': cls_id,
+                    'class_name': class_name,
+                    'confidence': conf,
+                    'bbox': {
+                        'x1': x1,
+                        'y1': y1,
+                        'x2': x2,
+                        'y2': y2
+                    },
+                    'center': {
+                        'x': center_x,
+                        'y': center_y
+                    },
+                    'dimensions': {
+                        'width': width,
+                        'height': height
+                    }
+                }
+                
+                detections.append(detection)
+            
+            # Prepare response
+            response_data = {
+                'success': True,
+                'task_id': task_id,
+                'model': 'YOLOv11',
+                'summary': {
+                    'total_images': 1,
+                    'total_detections': len(detections),
+                    'images_with_detections': 1 if len(detections) > 0 else 0,
+                    'images_without_detections': 0 if len(detections) > 0 else 1,
+                    'species_counts': species_counts
+                },
+                'detections': detections,
+                'processing_params': {
+                    'conf_threshold': conf_threshold,
+                    'iou_threshold': iou_threshold,
+                    'img_size': img_size,
+                    'include_annotated_images': include_annotated
+                }
+            }
+            
+            # Generate annotated image if requested
+            if include_annotated:
+                annotated_images = []
+                
+                # Get annotated image
+                annotated_img = result.plot()
+                
+                # Convert to PIL Image
+                annotated_pil = Image.fromarray(annotated_img[..., ::-1])  # BGR to RGB
+                
+                # Get original dimensions
+                orig_img = Image.open(image_path)
+                orig_width, orig_height = orig_img.size
+                
+                # Convert to base64
+                buffered = io.BytesIO()
+                annotated_pil.save(buffered, format="PNG")
+                img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                
+                annotated_images.append({
+                    'image_name': image_filename,
+                    'detections_count': len(detections),
+                    'annotated_image_base64': img_base64,
+                    'original_size': {
+                        'width': orig_width,
+                        'height': orig_height
+                    }
+                })
+                
+                response_data['annotated_images'] = annotated_images
+            
+            # Calculate processing time
+            processing_time = time.time() - start_time
+            response_data['processing_time_seconds'] = round(processing_time, 2)
+            
+            # Update task in database with success
+            update_task_success(
+                task_id=task_id,
+                processing_time_seconds=processing_time,
+                total_detections=len(detections),
+                images_with_detections=1 if len(detections) > 0 else 0,
+                images_without_detections=0 if len(detections) > 0 else 1,
+                species_counts=species_counts,
+                result_data=response_data
+            )
+            
+            # Save detections to database
+            save_detections(task_id, detections, 'yolo')
+            
+            print(f"\n✅ Single image analysis complete! Task ID: {task_id}")
+            print(f"   - Detections: {len(detections)}")
+            print(f"   - Processing time: {processing_time:.2f}s\n")
+            
+            return jsonify(response_data), 200
+            
+        finally:
+            # Clean up temp directory
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+        
+    except Exception as e:
+        print(f"❌ Error in single image YOLO analysis: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Update task with error if task_id exists
+        if task_id:
+            update_task_error(task_id, str(e))
+        
+        return jsonify({
+            'success': False,
+            'task_id': task_id,
+            'error': 'Analysis failed',
+            'message': str(e)
+        }), 500
+
+
+@app.route("/analyze-single-image-herdnet", methods=["POST"])
+def analyze_single_image_herdnet_endpoint():
+    """
+    Analyze a single image using HerdNet model
+    
+    Request:
+        - file: Single image file (multipart/form-data)
+        - patch_size: Patch size for stitching (optional, default 512)
+        - overlap: Overlap for stitching (optional, default 160)
+        - rotation: Number of 90-degree rotations (optional, default 0)
+        - thumbnail_size: Size for thumbnails (optional, default 256)
+        - include_thumbnails: Whether to include thumbnail data (optional, default true)
+        - include_plots: Whether to include plot data (optional, default false)
+    
+    Returns:
+        JSON with task_id, detection results, statistics, and optionally thumbnails/plots
+    """
+    task_id = None
+    start_time = time.time()
+    
+    try:
+        # Check if HerdNet model is loaded
+        if herdnet_model is None:
+            return jsonify({'error': 'HerdNet model not available'}), 503
+        
+        # Check if file is present
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Check if file is an image
+        if not allowed_image(file.filename):
+            return jsonify({'error': 'File must be an image (png, jpg, jpeg, gif, webp, bmp)'}), 400
+        
+        # Get optional parameters
+        patch_size = int(request.form.get('patch_size', 512))
+        overlap = int(request.form.get('overlap', 160))
+        rotation = int(request.form.get('rotation', 0))
+        thumbnail_size = int(request.form.get('thumbnail_size', 256))
+        include_thumbnails = request.form.get('include_thumbnails', 'true').lower() == 'true'
+        include_plots = request.form.get('include_plots', 'false').lower() == 'true'
+        
+        # Generate task ID
+        task_id = generate_task_id()
+        
+        print(f"\n{'='*60}")
+        print(f"HERDNET SINGLE IMAGE ANALYSIS")
+        print(f"Task ID: {task_id}")
+        print(f"Filename: {file.filename}")
+        print(f"Patch: {patch_size}, Overlap: {overlap}, Rotation: {rotation}")
+        print(f"{'='*60}\n")
+        
+        # Save task to database (status: processing)
+        save_task(
+            task_id=task_id,
+            model_type='herdnet',
+            filename=file.filename,
+            num_images=1,
+            processing_params={
+                'patch_size': patch_size,
+                'overlap': overlap,
+                'rotation': rotation,
+                'thumbnail_size': thumbnail_size,
+                'include_thumbnails': include_thumbnails,
+                'include_plots': include_plots
+            }
+        )
+        
+        # Create temp directory for processing
+        temp_dir = tempfile.mkdtemp()
+        
+        try:
+            # Save uploaded image
+            image_filename = secure_filename(file.filename)
+            image_path = os.path.join(temp_dir, image_filename)
+            file.save(image_path)
+            
+            # Process the image with HerdNet
+            print(f"Processing image with HerdNet: {image_filename}")
+            
+            # Load image
+            image = Image.open(image_path)
+            image_np = np.array(image)
+            
+            # Initialize stitcher
+            stitcher = HerdNetStitcher(
+                model=herdnet_model,
+                size=patch_size,
+                overlap=overlap,
+                down_ratio=2,
+                device=device
+            )
+            
+            # Apply rotation if specified
+            if rotation > 0:
+                rotator = Rotate90(k=rotation)
+                image_np = rotator(image=image_np)['image']
+            
+            # Run inference
+            output = stitcher(image_np)
+            
+            # Get detections
+            point_list = output['points']
+            class_list = output['classes']
+            scores_list = output['scores']
+            
+            # Process detections
+            detections = []
+            species_counts = {}
+            
+            for point, cls, score in zip(point_list, class_list, scores_list):
+                x, y = point
+                species = CLASSES[cls] if cls < len(CLASSES) else f"class_{cls}"
+                
+                # Count species
+                species_counts[species] = species_counts.get(species, 0) + 1
+                
+                detection = {
+                    'images': image_filename,
+                    'species': species,
+                    'scores': float(score),
+                    'x': float(x),
+                    'y': float(y)
+                }
+                
+                detections.append(detection)
+            
+            # Prepare response
+            response_data = {
+                'success': True,
+                'task_id': task_id,
+                'model': 'HerdNet',
+                'summary': {
+                    'total_images': 1,
+                    'total_detections': len(detections),
+                    'images_with_animals': 1 if len(detections) > 0 else 0,
+                    'species_counts': species_counts
+                },
+                'detections': detections,
+                'processing_params': {
+                    'patch_size': patch_size,
+                    'overlap': overlap,
+                    'rotation': rotation,
+                    'thumbnail_size': thumbnail_size,
+                    'include_thumbnails': include_thumbnails,
+                    'include_plots': include_plots
+                }
+            }
+            
+            # Generate thumbnails if requested
+            if include_thumbnails and len(detections) > 0:
+                thumbnails = []
+                half_size = thumbnail_size // 2
+                
+                for det in detections[:50]:  # Limit to first 50
+                    x, y = int(det['x']), int(det['y'])
+                    
+                    # Extract thumbnail
+                    x1 = max(0, x - half_size)
+                    y1 = max(0, y - half_size)
+                    x2 = min(image_np.shape[1], x + half_size)
+                    y2 = min(image_np.shape[0], y + half_size)
+                    
+                    thumbnail = image_np[y1:y2, x1:x2]
+                    thumbnail_pil = Image.fromarray(thumbnail)
+                    
+                    # Convert to base64
+                    buffered = io.BytesIO()
+                    thumbnail_pil.save(buffered, format="PNG")
+                    thumb_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                    
+                    thumbnails.append({
+                        'species': det['species'],
+                        'scores': det['scores'],
+                        'x': det['x'],
+                        'y': det['y'],
+                        'thumbnail_base64': thumb_base64
+                    })
+                
+                response_data['thumbnails'] = thumbnails
+            
+            # Generate plot if requested
+            if include_plots and len(detections) > 0:
+                plots = []
+                
+                # Create plot
+                plot_img = draw_points(
+                    image=image_np.copy(),
+                    points=point_list,
+                    classes=class_list,
+                    class_labels=CLASSES,
+                    radius=10
+                )
+                
+                # Convert to PIL and base64
+                plot_pil = Image.fromarray(plot_img)
+                buffered = io.BytesIO()
+                plot_pil.save(buffered, format="PNG")
+                plot_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                
+                plots.append({
+                    'image_name': image_filename,
+                    'detections_count': len(detections),
+                    'plot_base64': plot_base64
+                })
+                
+                response_data['plots'] = plots
+            
+            # Calculate processing time
+            processing_time = time.time() - start_time
+            response_data['processing_time_seconds'] = round(processing_time, 2)
+            
+            # Update task in database with success
+            update_task_success(
+                task_id=task_id,
+                processing_time_seconds=processing_time,
+                total_detections=len(detections),
+                images_with_detections=1 if len(detections) > 0 else 0,
+                images_without_detections=0 if len(detections) > 0 else 1,
+                species_counts=species_counts,
+                result_data=response_data
+            )
+            
+            # Save detections to database
+            save_detections(task_id, detections, 'herdnet')
+            
+            print(f"\n✅ Single image HerdNet analysis complete! Task ID: {task_id}")
+            print(f"   - Detections: {len(detections)}")
+            print(f"   - Processing time: {processing_time:.2f}s\n")
+            
+            return jsonify(response_data), 200
+            
+        finally:
+            # Clean up temp directory
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+        
+    except Exception as e:
+        print(f"❌ Error in single image HerdNet analysis: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Update task with error if task_id exists
+        if task_id:
+            update_task_error(task_id, str(e))
+        
+        return jsonify({
+            'success': False,
+            'task_id': task_id,
+            'error': 'Analysis failed',
+            'message': str(e)
+        }), 500
+
+
 @app.route("/tasks", methods=["GET"])
 def get_tasks_endpoint():
     """Get all tasks with optional filtering."""

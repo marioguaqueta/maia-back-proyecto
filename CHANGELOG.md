@@ -2,6 +2,277 @@
 
 All notable changes to the Wildlife Detection API project.
 
+## [2.3.0] - 2024-11-22
+
+### 🖼️ Single Image Analysis Support
+
+#### Major New Feature: Individual Image Upload
+- **NEW**: Support for analyzing single images (any format, any size)
+- **NEW**: Users can now choose between ZIP (batch) or single image
+- **NEW**: Faster processing for quick tests and single image analysis
+- **NEW**: Same beautiful card-based UI for both modes
+
+#### Backend - New Endpoints
+
+**Added 2 new API endpoints:**
+
+1. **`POST /analyze-single-image-yolo`**
+   - Analyze individual image with YOLOv11
+   - Accepts: PNG, JPG, JPEG, GIF, WebP, BMP, TIFF
+   - Parameters: same as batch endpoint
+   - Returns: consistent JSON format
+
+2. **`POST /analyze-single-image-herdnet`**
+   - Analyze individual image with HerdNet
+   - Accepts: PNG, JPG, JPEG, GIF, WebP, BMP, TIFF
+   - Parameters: same as batch endpoint
+   - Returns: consistent JSON format
+   - Optimized for large aerial/satellite images
+
+**Features:**
+- ✅ Task ID generation for all analyses
+- ✅ Database storage (same as batch)
+- ✅ Base64 image encoding
+- ✅ Error handling and validation
+- ✅ Temporary file cleanup
+
+#### Frontend - Enhanced File Upload
+
+**New UI Components:**
+- 🎛️ **File Type Selector**: Radio buttons for ZIP vs Single Image
+- 📁 **Dynamic File Uploader**: Changes accepted types based on selection
+- 📊 **Adaptive Metrics**: Adjusts display for single image results
+- 🚀 **Smart Endpoint Selection**: Automatically calls correct API
+
+**User Experience:**
+```
+Before: Only ZIP upload
+Now:    ZIP OR Single Image
+        ├─ 📦 ZIP → Batch analysis (multiple images)
+        └─ 🖼️ Image → Quick analysis (one image)
+```
+
+**Supported Image Formats:**
+- PNG, JPG, JPEG (standard)
+- GIF, WebP (modern)
+- BMP, TIFF (legacy)
+
+### 📝 Files Added/Modified
+
+**Modified Files:**
+- `app.py` - Added 440+ lines (2 new endpoints)
+- `streamlit_app.py` - Enhanced upload UI (~50 lines modified)
+
+**New Files:**
+- `SINGLE_IMAGE_FEATURE.md` - Complete documentation (850+ lines)
+
+### 🎯 Use Cases
+
+#### Quick Testing
+Upload a single image to test model performance before batch processing.
+
+#### Real-time Analysis
+Analyze images as they come in without creating ZIP files.
+
+#### Large Images
+Process large aerial/satellite images directly with HerdNet.
+
+#### Rapid Prototyping
+Test different parameters on a single image quickly.
+
+### 💻 API Examples
+
+**cURL - YOLO Single Image:**
+```bash
+curl -X POST http://localhost:8000/analyze-single-image-yolo \
+  -F "file=@elephant.jpg" \
+  -F "conf_threshold=0.3" \
+  -F "img_size=640"
+```
+
+**cURL - HerdNet Single Image:**
+```bash
+curl -X POST http://localhost:8000/analyze-single-image-herdnet \
+  -F "file=@aerial.jpg" \
+  -F "patch_size=768" \
+  -F "include_plots=true"
+```
+
+**Python:**
+```python
+import requests
+
+url = "http://localhost:8000/analyze-single-image-yolo"
+files = {'file': open('wildlife.jpg', 'rb')}
+data = {'conf_threshold': 0.25}
+
+response = requests.post(url, files=files, data=data)
+result = response.json()
+print(f"Detections: {result['summary']['total_detections']}")
+```
+
+### 📊 Comparison: ZIP vs Single Image
+
+| Feature | ZIP (Batch) | Single Image |
+|---------|-------------|--------------|
+| **Images** | Multiple | One |
+| **Speed** | Slower | Faster |
+| **Formats** | ZIP only | PNG, JPG, GIF, WebP, BMP, TIFF |
+| **Use Case** | Mass analysis | Quick tests |
+| **Endpoints** | `/analyze-yolo` `/analyze-image` | `/analyze-single-image-yolo` `/analyze-single-image-herdnet` |
+| **UI Cards** | Multiple (grid) | Single |
+| **Metrics** | 4 columns | 3 columns (optimized) |
+
+### 🎨 UI/UX Improvements
+
+**Streamlit Interface:**
+- ✅ Radio button selector (horizontal layout)
+- ✅ Dynamic file uploader with appropriate icons
+- ✅ File size display (KB or MB)
+- ✅ Adaptive loading messages
+- ✅ Context-aware metrics display
+- ✅ Same beautiful card layout for results
+
+**User Flow:**
+1. Select file type (ZIP or Image)
+2. Upload file
+3. Choose model (YOLOv11 or HerdNet)
+4. Configure parameters
+5. Click "Ejecutar Análisis"
+6. View results in card format
+
+### 🔧 Technical Details
+
+**Backend Processing:**
+- Single image saved to temp directory
+- Inference executed (YOLO or HerdNet)
+- Results processed identically to batch
+- Base64 encoding for images
+- Database storage with task_id
+- Automatic cleanup
+
+**Frontend Detection:**
+- File type detection based on user selection
+- Endpoint routing logic
+- Parameter passing (unchanged)
+- Result display adaptation
+
+### ✅ Quality Assurance
+
+- ✅ No linting errors
+- ✅ Consistent API format
+- ✅ Database integration working
+- ✅ Error handling comprehensive
+- ✅ UI responsive and intuitive
+- ✅ Both models tested
+- ✅ Documentation complete
+
+### 📚 Documentation
+
+Complete guide in `SINGLE_IMAGE_FEATURE.md`:
+- API specifications
+- Request/response examples
+- Frontend usage guide
+- Implementation details
+- Testing instructions
+- Troubleshooting tips
+
+---
+
+## [2.2.0] - 2024-11-22
+
+### 🇪🇸 Internationalization
+
+#### Complete Spanish Translation of Streamlit Frontend
+- **NEW**: Entire Streamlit interface translated to Spanish
+- **TRANSLATED**: All user-facing text, labels, buttons, and messages
+- **TRANSLATED**: Navigation menu and page titles
+- **TRANSLATED**: Form labels and input helpers
+- **TRANSLATED**: Status messages (success, error, info, warning)
+- **TRANSLATED**: Table headers and data labels
+- **TRANSLATED**: Card headers, badges, and action buttons
+- **TRANSLATED**: About page content with species names
+- **MAINTAINED**: Technical terms (YOLOv11, HerdNet, IOU, API)
+- **MAINTAINED**: Code and variable names in English
+
+### 📝 Files Added/Modified
+
+**New Files:**
+- `TRADUCCION_ESPAÑOL.md` - Complete translation documentation (340+ lines)
+
+**Modified Files:**
+- `streamlit_app.py` - Fully translated to Spanish (~714 lines)
+- `CHANGELOG.md` - This update
+
+### 🎯 Translation Coverage
+
+**Elements Translated:** 110+ user-facing elements
+
+**Categories:**
+- ✅ Page titles and headers (25+)
+- ✅ Navigation menu items (4)
+- ✅ Form labels and controls (20+)
+- ✅ Buttons and action labels (15+)
+- ✅ Status messages (30+)
+- ✅ Table columns (10+)
+- ✅ Help texts and tooltips (10+)
+- ✅ About page content (full markdown)
+
+**Key Translations:**
+- "Wildlife Detection" → "Detección de Fauna"
+- "New Analysis" → "Nuevo Análisis"
+- "View Results" → "Ver Resultados"
+- "Statistics" → "Estadísticas"
+- "Confidence Threshold" → "Umbral de Confianza"
+- "Bounding Boxes" → "Cajas Delimitadoras"
+- "Species Distribution" → "Distribución de Especies"
+- "Processing Time" → "Tiempo de Procesamiento"
+
+**Species Names in Spanish:**
+- Buffalo → Búfalo
+- Elephant → Elefante
+- Kob → Kob (mantiene nombre)
+- Topi → Topi (mantiene nombre)
+- Warthog → Jabalí Verrugoso
+- Waterbuck → Antílope Acuático
+
+### 🌐 User Experience
+
+**Improved for Spanish-speaking users:**
+- ✅ Natural, professional Spanish terminology
+- ✅ Consistent translation across all pages
+- ✅ Appropriate technical terms
+- ✅ Clear and accessible language
+- ✅ Maintains scientific accuracy
+
+**No Breaking Changes:**
+- ✅ All functionality preserved
+- ✅ No code logic changes
+- ✅ API communication unchanged
+- ✅ Backend compatibility maintained
+
+### 📚 Documentation
+
+Complete translation guide in `TRADUCCION_ESPAÑOL.md` including:
+- Detailed list of all translated elements
+- Translation statistics and metrics
+- Glossary of key terms
+- Style and tone guidelines
+- Testing checklist
+- Maintenance recommendations
+
+### 🧪 Testing
+
+- ✅ No linting errors
+- ✅ All pages load correctly
+- ✅ Forms and inputs work
+- ✅ Buttons and actions functional
+- ✅ Error messages display properly
+- ✅ Data tables render correctly
+- ✅ Charts and visualizations work
+
+---
+
 ## [2.1.0] - 2024-11-22
 
 ### 🎨 UI/UX Improvements
