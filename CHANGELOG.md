@@ -2,6 +2,107 @@
 
 All notable changes to the Wildlife Detection API project.
 
+## [2.3.1] - 2024-11-22
+
+### 🇪🇸 Documentation Translation - Architecture Diagrams
+
+#### Complete Spanish Translation of All Diagrams
+- **TRANSLATED**: All Mermaid architecture diagrams to Spanish
+- **TRANSLATED**: Interactive HTML diagram viewer to Spanish
+- **TRANSLATED**: Diagram documentation and guides to Spanish
+- **UPDATED**: All diagram labels, nodes, and descriptions
+
+### 📝 Files Translated
+
+**Architecture Diagrams:**
+- `ARCHITECTURE_DIAGRAM.md` - All 6 diagrams fully translated
+  1. High-Level Architecture → Arquitectura de Alto Nivel
+  2. Deployment Architecture → Arquitectura de Despliegue
+  3. Data Flow Diagram → Diagrama de Flujo de Datos
+  4. Component Interaction → Interacción de Componentes
+  5. Deployment Flow → Flujo de Despliegue
+  6. Security Architecture → Arquitectura de Seguridad
+
+**Interactive Viewer:**
+- `diagrams.html` - Complete Spanish translation
+  - Page title and headers
+  - Instructions section
+  - Download buttons
+  - All diagram content
+  - JavaScript messages
+
+**Documentation:**
+- `DIAGRAMS_README.md` - Complete translation
+  - Quick guide
+  - Generation methods
+  - Troubleshooting
+  - Examples and tips
+
+### 🎯 Translation Coverage
+
+**Diagram Elements Translated:**
+- ✅ Node labels and descriptions
+- ✅ Relationship labels (arrows, connections)
+- ✅ Subgraph titles
+- ✅ Notes and annotations
+- ✅ Section headers
+- ✅ Button labels
+- ✅ Instructions text
+
+**Key Terminology:**
+- User → Usuario
+- Frontend → Frontend
+- Backend → Backend
+- Database → Base de Datos
+- Models → Modelos
+- Deployment → Despliegue
+- Architecture → Arquitectura
+- Security → Seguridad
+- Component → Componente
+- Service → Servicio
+
+### 📊 Diagrams in Spanish
+
+All diagrams now display in Spanish including:
+- AWS EC2 Instance → Instancia AWS EC2
+- Security Group → Grupo de Seguridad
+- Load Balancer → Balanceador de Carga
+- External Services → Servicios Externos
+- Protected Resources → Recursos Protegidos
+- First Time Setup → Configuración Primera Vez
+- Image Analysis Workflow → Flujo de Análisis de Imagen
+
+### 🌐 HTML Viewer Features
+
+Spanish interactive viewer includes:
+- Language changed to Spanish (`lang="es"`)
+- All UI elements translated
+- Download buttons: "Descargar PNG"
+- Instructions in Spanish
+- Footer in Spanish
+- JavaScript alerts in Spanish
+
+### ✅ Quality Assurance
+
+- ✅ All diagram syntax valid
+- ✅ Mermaid rendering works correctly
+- ✅ HTML displays properly
+- ✅ Download functionality intact
+- ✅ Professional Spanish terminology
+- ✅ Consistent translations throughout
+- ✅ Technical accuracy maintained
+
+### 📚 Documentation
+
+Complete Spanish documentation for:
+- Architecture understanding
+- Deployment processes
+- System components
+- Data flows
+- Security measures
+
+---
+
 ## [2.3.0] - 2024-11-22
 
 ### 🖼️ Single Image Analysis Support

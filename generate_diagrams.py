@@ -59,7 +59,6 @@ graph TB
     end
     
     subgraph "AWS EC2 Instance - Backend"
-        LB[Load Balancer /<br/>Reverse Proxy]
         
         subgraph "Docker Container"
             Gunicorn[Gunicorn WSGI Server<br/>2 workers, 2 threads<br/>Port: 8000]
@@ -81,8 +80,7 @@ graph TB
     
     Users -->|HTTPS| StreamlitApp
     StreamlitConfig -.->|Configure| StreamlitApp
-    StreamlitApp -->|HTTP API Calls| LB
-    LB --> Gunicorn
+    StreamlitApp -->|HTTP API Calls| Gunicorn
     Gunicorn --> FlaskApp
     FlaskApp --> DB
     FlaskApp --> ModelsDir

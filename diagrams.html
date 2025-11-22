@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wildlife Detection System - Architecture Diagrams</title>
+    <title>Sistema de Detección de Fauna - Diagramas de Arquitectura</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
         body {
@@ -72,51 +72,51 @@
 </head>
 <body>
     <div class="header">
-        <h1>🦁 Wildlife Detection System</h1>
-        <p>Architecture & Deployment Diagrams</p>
+        <h1>🦁 Sistema de Detección de Fauna</h1>
+        <p>Diagramas de Arquitectura y Despliegue</p>
     </div>
 
     <div class="instructions">
-        <h3>📥 How to Download Diagrams as PNG:</h3>
+        <h3>📥 Cómo Descargar Diagramas como PNG:</h3>
         <ol>
-            <li><strong>Method 1:</strong> Click the "Download PNG" button below each diagram</li>
-            <li><strong>Method 2:</strong> Right-click on any diagram → "Save image as..."</li>
-            <li><strong>Method 3:</strong> Take a screenshot of the specific diagram you need</li>
-            <li><strong>Method 4:</strong> Click "Download All as ZIP" to get all diagrams at once</li>
+            <li><strong>Método 1:</strong> Haz clic en el botón "Descargar PNG" debajo de cada diagrama</li>
+            <li><strong>Método 2:</strong> Clic derecho en cualquier diagrama → "Guardar imagen como..."</li>
+            <li><strong>Método 3:</strong> Toma una captura de pantalla del diagrama específico que necesitas</li>
+            <li><strong>Método 4:</strong> Haz clic en "Descargar Todo como ZIP" para obtener todos los diagramas a la vez</li>
         </ol>
-        <p><strong>Tip:</strong> Open this file in Chrome or Firefox for best results!</p>
+        <p><strong>Consejo:</strong> ¡Abre este archivo en Chrome o Firefox para mejores resultados!</p>
     </div>
 
-    <!-- Diagram 1: High-Level Architecture -->
+    <!-- Diagrama 1: Arquitectura de Alto Nivel -->
     <div class="diagram-container">
-        <h2>1. High-Level Architecture</h2>
+        <h2>1. Arquitectura de Alto Nivel</h2>
         <div class="mermaid" id="diagram1">
 graph TB
-    subgraph "User Interface"
-        User[👤 End User<br/>Web Browser]
+    subgraph "Interfaz de Usuario"
+        User[👤 Usuario Final<br/>Navegador Web]
     end
     
     subgraph "Streamlit Cloud ☁️"
-        Frontend[🌐 Streamlit Frontend<br/>streamlit_app.py<br/>Port: 8501]
+        Frontend[🌐 Frontend Streamlit<br/>streamlit_app.py<br/>Puerto: 8501]
     end
     
-    subgraph "AWS EC2 Instance 🖥️"
-        Backend[🔧 Flask Backend API<br/>app.py<br/>Port: 8000]
-        Database[(💾 SQLite DB<br/>wildlife_detection.db)]
-        Models[🤖 ML Models<br/>- YOLOv11 best.pt<br/>- HerdNet herdnet_model.pth]
+    subgraph "Instancia AWS EC2 🖥️"
+        Backend[🔧 API Backend Flask<br/>app.py<br/>Puerto: 8000]
+        Database[(💾 BD SQLite<br/>wildlife_detection.db)]
+        Models[🤖 Modelos ML<br/>- YOLOv11 best.pt<br/>- HerdNet herdnet_model.pth]
     end
     
     subgraph "Google Drive ☁️"
-        GDrive[(📦 Model Storage<br/>Folder ID: 11uMn45...)]
+        GDrive[(📦 Almacenamiento de Modelos<br/>ID Carpeta: 11uMn45...)]
     end
     
     User -->|HTTPS| Frontend
-    Frontend -->|REST API<br/>HTTP Requests| Backend
-    Backend -->|Read/Write| Database
-    Backend -->|Load Models| Models
-    Backend -.->|Download<br/>On First Run| GDrive
-    Backend -->|JSON Response| Frontend
-    Frontend -->|Display Results| User
+    Frontend -->|API REST<br/>Peticiones HTTP| Backend
+    Backend -->|Leer/Escribir| Database
+    Backend -->|Cargar Modelos| Models
+    Backend -.->|Descargar<br/>Primera Ejecución| GDrive
+    Backend -->|Respuesta JSON| Frontend
+    Frontend -->|Mostrar Resultados| User
     
     style Frontend fill:#e1f5ff
     style Backend fill:#fff4e1
@@ -125,54 +125,51 @@ graph TB
     style GDrive fill:#fff3e0
     style User fill:#f3e5f5
         </div>
-        <button class="download-btn" onclick="downloadDiagram('diagram1', '1_architecture.png')">📥 Download PNG</button>
+        <button class="download-btn" onclick="downloadDiagram('diagram1', 'arquitectura_alto_nivel')">📥 Descargar PNG</button>
     </div>
 
-    <!-- Diagram 2: Deployment Architecture -->
+    <!-- Diagrama 2: Arquitectura de Despliegue -->
     <div class="diagram-container">
-        <h2>2. Deployment Architecture</h2>
+        <h2>2. Arquitectura de Despliegue</h2>
         <div class="mermaid" id="diagram2">
 graph TB
     subgraph "Internet 🌐"
-        Users[👥 Users]
+        Users[👥 Usuarios]
     end
     
     subgraph "Streamlit Cloud - Frontend"
-        StreamlitApp[Streamlit Web App<br/>- Python 3.11<br/>- requirements-streamlit.txt]
-        StreamlitConfig[Secrets<br/>API_BASE_URL]
+        StreamlitApp[Aplicación Web Streamlit<br/>- Python 3.11<br/>- requirements-streamlit.txt<br/>- Dependencias mínimas]
+        StreamlitConfig[Configuración de Secretos<br/>API_BASE_URL]
     end
     
-    subgraph "AWS EC2 Instance - Backend"
-        LB[Load Balancer]
+    subgraph "Instancia AWS EC2 - Backend"
         
-        subgraph "Docker"
-            Gunicorn[Gunicorn<br/>2 workers, 2 threads]
-            FlaskApp[Flask Application]
+        subgraph "Contenedor Docker"
+            Gunicorn[Servidor WSGI Gunicorn<br/>2 workers, 2 threads<br/>Puerto: 8000]
+            FlaskApp[Aplicación Flask<br/>- app.py<br/>- database.py<br/>- model_loader.py<br/>- infer.py]
             
-            subgraph "Storage"
-                DB[(SQLite DB)]
-                ModelsDir[Models]
-                Uploads[Uploads/]
+            subgraph "Almacenamiento"
+                DB[(BD SQLite)]
+                ModelsDir[Directorio de Modelos<br/>best.pt<br/>herdnet_model.pth]
+                Uploads[Uploads/<br/>Archivos Temporales]
             end
         end
         
-        SecurityGroup[Security Group<br/>Port 8000, 22]
+        SecurityGroup[Grupo de Seguridad<br/>- Puerto 8000: HTTP<br/>- Puerto 22: SSH]
     end
     
-    subgraph "External"
-        GDrive[Google Drive]
+    subgraph "Servicios Externos"
+        GDrive[Google Drive<br/>Descarga de Modelos]
     end
     
     Users -->|HTTPS| StreamlitApp
-    StreamlitConfig -.-> StreamlitApp
-    StreamlitApp -->|HTTP| LB
-    LB --> Gunicorn
+    StreamlitConfig -.->|Configurar| StreamlitApp
+    StreamlitApp -->|Llamadas API HTTP| Gunicorn
     Gunicorn --> FlaskApp
     FlaskApp --> DB
     FlaskApp --> ModelsDir
     FlaskApp --> Uploads
-    FlaskApp -.-> GDrive
-    SecurityGroup -.-> LB
+    FlaskApp -.->|Primera Ejecución| GDrive
     
     style StreamlitApp fill:#00d4ff
     style FlaskApp fill:#ff9800
@@ -181,128 +178,156 @@ graph TB
     style SecurityGroup fill:#f44336
     style GDrive fill:#ffc107
         </div>
-        <button class="download-btn" onclick="downloadDiagram('diagram2', '2_deployment.png')">📥 Download PNG</button>
+        <button class="download-btn" onclick="downloadDiagram('diagram2', 'arquitectura_despliegue')">📥 Descargar PNG</button>
     </div>
 
-    <!-- Diagram 3: Data Flow -->
+    <!-- Diagrama 3: Flujo de Datos -->
     <div class="diagram-container">
-        <h2>3. Data Flow Sequence</h2>
+        <h2>3. Diagrama de Flujo de Datos</h2>
         <div class="mermaid" id="diagram3">
 sequenceDiagram
-    participant User
-    participant Streamlit as Streamlit<br/>Frontend
-    participant API as Flask<br/>Backend
-    participant DB as SQLite<br/>Database
-    participant Models as ML<br/>Models
+    participant User as Usuario
+    participant Streamlit as Frontend Streamlit<br/>(Streamlit Cloud)
+    participant API as Backend Flask<br/>(AWS EC2)
+    participant DB as Base de Datos SQLite
+    participant Models as Modelos ML<br/>(YOLO/HerdNet)
+    participant GDrive as Google Drive
     
-    Note over User,Models: Image Analysis
-    User->>Streamlit: Upload ZIP
-    User->>Streamlit: Select model
-    Streamlit->>API: POST /analyze
+    Note over User,GDrive: Configuración Primera Vez
+    API->>GDrive: Verificar si existen modelos
+    GDrive-->>API: Descargar best.pt y herdnet_model.pth
+    API->>DB: Inicializar esquema de base de datos
     
-    API->>DB: Save task
-    API->>API: Extract images
-    API->>Models: Run inference
-    Models-->>API: Detections
+    Note over User,GDrive: Flujo de Análisis de Imagen
+    User->>Streamlit: Subir archivo ZIP
+    User->>Streamlit: Seleccionar modelo y parámetros
+    Streamlit->>API: POST /analyze-yolo o /analyze-image
     
-    API->>API: Generate results
-    API->>DB: Save results
-    API-->>Streamlit: JSON + task_id
+    API->>DB: Generar task_id, guardar tarea
+    API->>API: Extraer imágenes del ZIP
+    API->>Models: Cargar modelo y ejecutar inferencia
+    Models-->>API: Resultados de detección
     
-    Streamlit->>Streamlit: Visualize
-    Streamlit->>User: Display
+    API->>API: Generar imágenes anotadas/miniaturas
+    API->>DB: Guardar resultados completos + detecciones
+    API-->>Streamlit: Respuesta JSON con task_id
     
-    Note over User,Models: Retrieve Results
-    User->>Streamlit: Enter task_id
-    Streamlit->>API: GET /tasks/id
-    API->>DB: Query
-    DB-->>API: Data
-    API-->>Streamlit: Results
-    Streamlit->>User: Display
+    Streamlit->>Streamlit: Analizar resultados y crear visualizaciones
+    Streamlit->>User: Mostrar tabla, gráficos, imágenes
+    
+    Note over User,GDrive: Recuperar Resultados Anteriores
+    User->>Streamlit: Ingresar task_id o navegar historial
+    Streamlit->>API: GET /tasks/{task_id}
+    API->>DB: Consultar tarea y resultados
+    DB-->>API: Respuesta JSON completa
+    API-->>Streamlit: Datos de tarea con imágenes
+    Streamlit->>User: Mostrar análisis anterior
+    
+    Note over User,GDrive: Ver Estadísticas
+    User->>Streamlit: Abrir página de estadísticas
+    Streamlit->>API: GET /database/stats
+    API->>DB: Estadísticas agregadas
+    DB-->>API: Conteos y distribuciones
+    API-->>Streamlit: JSON de estadísticas
+    Streamlit->>Streamlit: Crear gráficos
+    Streamlit->>User: Mostrar panel de estadísticas
         </div>
-        <button class="download-btn" onclick="downloadDiagram('diagram3', '3_dataflow.png')">📥 Download PNG</button>
+        <button class="download-btn" onclick="downloadDiagram('diagram3', 'flujo_datos')">📥 Descargar PNG</button>
     </div>
 
-    <!-- Diagram 4: Component Interaction -->
+    <!-- Diagrama 4: Interacción de Componentes -->
     <div class="diagram-container">
-        <h2>4. Component Interaction</h2>
+        <h2>4. Interacción de Componentes</h2>
         <div class="mermaid" id="diagram4">
 graph LR
-    subgraph "Frontend"
-        UI1[New Analysis]
-        UI2[View Results]
-        UI3[Statistics]
-        UI4[About]
+    subgraph "Componentes Frontend"
+        UI1[Página Nuevo Análisis]
+        UI2[Página Ver Resultados]
+        UI3[Página Estadísticas]
+        UI4[Página Acerca de]
     end
     
-    subgraph "API"
-        EP1[POST<br/>/analyze-yolo]
-        EP2[POST<br/>/analyze-image]
-        EP3[GET<br/>/tasks]
-        EP4[GET<br/>/database/stats]
+    subgraph "Endpoints API"
+        EP1[POST /analyze-yolo]
+        EP2[POST /analyze-image]
+        EP3[GET /tasks]
+        EP4[GET /tasks/task_id]
+        EP5[GET /database/stats]
+        EP6[GET /health]
     end
     
-    subgraph "Services"
-        S1[YOLO<br/>Inference]
-        S2[HerdNet<br/>Inference]
-        S3[Database<br/>Service]
+    subgraph "Servicios Backend"
+        Service1[Inferencia YOLO]
+        Service2[Inferencia HerdNet]
+        Service3[Servicio de BD]
+        Service4[Cargador de Modelos]
     end
     
-    subgraph "Storage"
-        DB1[(tasks)]
-        DB2[(results)]
-        Files[(Models)]
+    subgraph "Almacenamiento de Datos"
+        DB1[(tabla tasks)]
+        DB2[(tabla task_results)]
+        DB3[(tabla detections)]
+        Files[(Archivos de Modelos)]
     end
     
     UI1 --> EP1
     UI1 --> EP2
     UI2 --> EP3
-    UI3 --> EP4
+    UI2 --> EP4
+    UI3 --> EP5
+    UI4 --> EP6
     
-    EP1 --> S1
-    EP2 --> S2
-    EP3 --> S3
-    EP4 --> S3
+    EP1 --> Service1
+    EP2 --> Service2
+    EP3 --> Service3
+    EP4 --> Service3
+    EP5 --> Service3
     
-    S1 --> Files
-    S2 --> Files
-    S3 --> DB1
-    S3 --> DB2
+    Service1 --> Files
+    Service2 --> Files
+    Service3 --> DB1
+    Service3 --> DB2
+    Service3 --> DB3
+    Service4 --> Files
     
     style UI1 fill:#e3f2fd
     style UI2 fill:#e3f2fd
     style UI3 fill:#e3f2fd
     style UI4 fill:#e3f2fd
-    style S1 fill:#fff3e0
-    style S2 fill:#fff3e0
-    style S3 fill:#e8f5e9
+    style Service1 fill:#fff3e0
+    style Service2 fill:#fff3e0
+    style Service3 fill:#e8f5e9
+    style Service4 fill:#f3e5f5
         </div>
-        <button class="download-btn" onclick="downloadDiagram('diagram4', '4_components.png')">📥 Download PNG</button>
+        <button class="download-btn" onclick="downloadDiagram('diagram4', 'interaccion_componentes')">📥 Descargar PNG</button>
     </div>
 
-    <!-- Diagram 5: Deployment Flow -->
+    <!-- Diagrama 5: Flujo de Despliegue -->
     <div class="diagram-container">
-        <h2>5. Deployment Flow</h2>
+        <h2>5. Flujo de Despliegue</h2>
         <div class="mermaid" id="diagram5">
 graph TD
-    Start([Start])
+    Start([Iniciar Despliegue])
     
-    subgraph "Backend"
-        B1[Push to GitHub]
-        B2[SSH to EC2]
-        B3[Pull code]
-        B4[Build Docker]
-        B5[Run compose]
-        B6[✅ Ready]
+    subgraph "Despliegue Backend EC2"
+        B1[Subir código a GitHub]
+        B2[SSH a instancia EC2]
+        B3[Obtener código más reciente]
+        B4[Construir imagen Docker]
+        B5[Ejecutar docker-compose up]
+        B6[Modelos se descargan de GDrive]
+        B7[Base de datos se inicializa]
+        B8[Backend listo en puerto 8000]
     end
     
-    subgraph "Frontend"
-        F1[Push to GitHub]
-        F2[Streamlit Cloud]
-        F3[Configure]
-        F4[Set secrets]
-        F5[Deploy]
-        F6[✅ Ready]
+    subgraph "Despliegue Frontend Streamlit Cloud"
+        F1[Subir código a GitHub]
+        F2[Iniciar sesión en Streamlit Cloud]
+        F3[Crear/Actualizar app]
+        F4[Configurar ajustes<br/>- Python 3.11<br/>- requirements-streamlit.txt]
+        F5[Establecer secretos<br/>API_BASE_URL]
+        F6[Desplegar app]
+        F7[Frontend listo en 8501]
     end
     
     Start --> B1
@@ -313,72 +338,77 @@ graph TD
     B3 --> B4
     B4 --> B5
     B5 --> B6
+    B6 --> B7
+    B7 --> B8
     
     F1 --> F2
     F2 --> F3
     F3 --> F4
     F4 --> F5
     F5 --> F6
+    F6 --> F7
     
-    B6 --> Done
-    F6 --> Done
-    Done([🎉 Complete])
+    B8 --> Connected{Backend <-> Frontend<br/>¿Conectado?}
+    F7 --> Connected
     
-    style B6 fill:#c8e6c9
-    style F6 fill:#b2dfdb
-    style Done fill:#81c784
+    Connected -->|Sí| Success([✅ Despliegue Completo])
+    Connected -->|No| Debug[Depurar conexión<br/>Verificar API_BASE_URL<br/>Verificar grupos de seguridad]
+    Debug --> Connected
+    
+    style B1 fill:#ffecb3
+    style B8 fill:#c8e6c9
+    style F1 fill:#e1bee7
+    style F7 fill:#b2dfdb
+    style Success fill:#81c784
+    style Debug fill:#ffab91
         </div>
-        <button class="download-btn" onclick="downloadDiagram('diagram5', '5_deployment_flow.png')">📥 Download PNG</button>
+        <button class="download-btn" onclick="downloadDiagram('diagram5', 'flujo_despliegue')">📥 Descargar PNG</button>
     </div>
 
     <div class="footer">
-        <p>🦁 <strong>Wildlife Detection System</strong> - Architecture Documentation</p>
-        <p>Generated with Mermaid.js</p>
+        <p>Sistema de Detección de Fauna Africana - Diagramas de Arquitectura</p>
+        <p>Generado con Mermaid.js | Puedes editar ARCHITECTURE_DIAGRAM.md para personalizar</p>
     </div>
 
     <script>
-        // Initialize Mermaid
         mermaid.initialize({ 
             startOnLoad: true,
             theme: 'default',
-            themeVariables: {
-                fontSize: '16px'
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
             }
         });
 
-        // Function to download diagram as PNG
         function downloadDiagram(diagramId, filename) {
             const svg = document.querySelector(`#${diagramId} svg`);
             if (!svg) {
-                alert('Diagram not rendered yet. Please wait a moment and try again.');
+                alert('Por favor espera a que el diagrama se renderice completamente antes de descargar.');
                 return;
             }
 
-            // Get SVG data
+            // Obtener el SVG como string
             const svgData = new XMLSerializer().serializeToString(svg);
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
 
-            // Set canvas size based on SVG
-            const svgRect = svg.getBoundingClientRect();
-            canvas.width = svgRect.width * 2; // 2x for better quality
-            canvas.height = svgRect.height * 2;
+            // Obtener dimensiones del SVG
+            const svgSize = svg.getBoundingClientRect();
+            canvas.width = svgSize.width * 2;  // 2x para mejor calidad
+            canvas.height = svgSize.height * 2;
 
             img.onload = function() {
-                // White background
                 ctx.fillStyle = 'white';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Draw SVG
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
-                // Download
                 canvas.toBlob(function(blob) {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = filename;
+                    a.download = `${filename}.png`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -389,10 +419,12 @@ graph TD
             img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
         }
 
-        // Wait for diagrams to render
-        console.log('Wildlife Detection System - Architecture Diagrams loaded');
-        console.log('Click any "Download PNG" button to save diagrams');
+        // Esperar a que se carguen los diagramas
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                console.log('Diagramas renderizados. Puedes descargarlos ahora.');
+            }, 2000);
+        });
     </script>
 </body>
 </html>
-

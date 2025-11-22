@@ -1,34 +1,34 @@
-# Wildlife Detection System - Architecture Diagrams
+# Sistema de Detección de Fauna - Diagramas de Arquitectura
 
-## 1. High-Level Architecture
+## 1. Arquitectura de Alto Nivel
 
 ```mermaid
 graph TB
-    subgraph "User Interface"
-        User[👤 End User<br/>Web Browser]
+    subgraph "Interfaz de Usuario"
+        User[👤 Usuario Final<br/>Navegador Web]
     end
     
     subgraph "Streamlit Cloud ☁️"
-        Frontend[🌐 Streamlit Frontend<br/>streamlit_app.py<br/>Port: 8501]
+        Frontend[🌐 Frontend Streamlit<br/>streamlit_app.py<br/>Puerto: 8501]
     end
     
-    subgraph "AWS EC2 Instance 🖥️"
-        Backend[🔧 Flask Backend API<br/>app.py<br/>Port: 8000]
-        Database[(💾 SQLite DB<br/>wildlife_detection.db)]
-        Models[🤖 ML Models<br/>- YOLOv11 best.pt<br/>- HerdNet herdnet_model.pth]
+    subgraph "Instancia AWS EC2 🖥️"
+        Backend[🔧 API Backend Flask<br/>app.py<br/>Puerto: 8000]
+        Database[(💾 BD SQLite<br/>wildlife_detection.db)]
+        Models[🤖 Modelos ML<br/>- YOLOv11 best.pt<br/>- HerdNet herdnet_model.pth]
     end
     
     subgraph "Google Drive ☁️"
-        GDrive[(📦 Model Storage<br/>Folder ID: 11uMn45...)]
+        GDrive[(📦 Almacenamiento de Modelos<br/>ID Carpeta: 11uMn45...)]
     end
     
     User -->|HTTPS| Frontend
-    Frontend -->|REST API<br/>HTTP Requests| Backend
-    Backend -->|Read/Write| Database
-    Backend -->|Load Models| Models
-    Backend -.->|Download<br/>On First Run| GDrive
-    Backend -->|JSON Response| Frontend
-    Frontend -->|Display Results| User
+    Frontend -->|API REST<br/>Peticiones HTTP| Backend
+    Backend -->|Leer/Escribir| Database
+    Backend -->|Cargar Modelos| Models
+    Backend -.->|Descargar<br/>Primera Ejecución| GDrive
+    Backend -->|Respuesta JSON| Frontend
+    Frontend -->|Mostrar Resultados| User
     
     style Frontend fill:#e1f5ff
     style Backend fill:#fff4e1
@@ -40,50 +40,50 @@ graph TB
 
 ---
 
-## 2. Deployment Architecture
+## 2. Arquitectura de Despliegue
 
 ```mermaid
 graph TB
     subgraph "Internet 🌐"
-        Users[👥 Users]
+        Users[👥 Usuarios]
     end
     
     subgraph "Streamlit Cloud - Frontend"
-        StreamlitApp[Streamlit Web App<br/>- Python 3.11<br/>- requirements-streamlit.txt<br/>- Minimal dependencies]
-        StreamlitConfig[Secrets Configuration<br/>API_BASE_URL]
+        StreamlitApp[Aplicación Web Streamlit<br/>- Python 3.11<br/>- requirements-streamlit.txt<br/>- Dependencias mínimas]
+        StreamlitConfig[Configuración de Secretos<br/>API_BASE_URL]
     end
     
-    subgraph "AWS EC2 Instance - Backend"
-        LB[Load Balancer /<br/>Reverse Proxy]
+    subgraph "Instancia AWS EC2 - Backend"
+        LB[Balanceador de Carga /<br/>Proxy Inverso]
         
-        subgraph "Docker Container"
-            Gunicorn[Gunicorn WSGI Server<br/>2 workers, 2 threads<br/>Port: 8000]
-            FlaskApp[Flask Application<br/>- app.py<br/>- database.py<br/>- model_loader.py<br/>- infer.py]
+        subgraph "Contenedor Docker"
+            Gunicorn[Servidor WSGI Gunicorn<br/>2 workers, 2 threads<br/>Puerto: 8000]
+            FlaskApp[Aplicación Flask<br/>- app.py<br/>- database.py<br/>- model_loader.py<br/>- infer.py]
             
-            subgraph "Storage"
-                DB[(SQLite DB)]
-                ModelsDir[Models Directory<br/>best.pt<br/>herdnet_model.pth]
-                Uploads[Uploads/<br/>Temporary Files]
+            subgraph "Almacenamiento"
+                DB[(BD SQLite)]
+                ModelsDir[Directorio de Modelos<br/>best.pt<br/>herdnet_model.pth]
+                Uploads[Uploads/<br/>Archivos Temporales]
             end
         end
         
-        SecurityGroup[Security Group<br/>- Port 8000: HTTP<br/>- Port 22: SSH]
+        SecurityGroup[Grupo de Seguridad<br/>- Puerto 8000: HTTP<br/>- Puerto 22: SSH]
     end
     
-    subgraph "External Services"
-        GDrive[Google Drive<br/>Model Downloads]
+    subgraph "Servicios Externos"
+        GDrive[Google Drive<br/>Descarga de Modelos]
     end
     
     Users -->|HTTPS| StreamlitApp
-    StreamlitConfig -.->|Configure| StreamlitApp
-    StreamlitApp -->|HTTP API Calls| LB
+    StreamlitConfig -.->|Configurar| StreamlitApp
+    StreamlitApp -->|Llamadas API HTTP| LB
     LB --> Gunicorn
     Gunicorn --> FlaskApp
     FlaskApp --> DB
     FlaskApp --> ModelsDir
     FlaskApp --> Uploads
-    FlaskApp -.->|First Run| GDrive
-    SecurityGroup -.->|Protects| LB
+    FlaskApp -.->|Primera Ejecución| GDrive
+    SecurityGroup -.->|Protege| LB
     
     style StreamlitApp fill:#00d4ff
     style FlaskApp fill:#ff9800
@@ -95,71 +95,71 @@ graph TB
 
 ---
 
-## 3. Data Flow Diagram
+## 3. Diagrama de Flujo de Datos
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Streamlit as Streamlit Frontend<br/>(Streamlit Cloud)
-    participant API as Flask Backend<br/>(AWS EC2)
-    participant DB as SQLite Database
-    participant Models as ML Models<br/>(YOLO/HerdNet)
+    participant User as Usuario
+    participant Streamlit as Frontend Streamlit<br/>(Streamlit Cloud)
+    participant API as Backend Flask<br/>(AWS EC2)
+    participant DB as Base de Datos SQLite
+    participant Models as Modelos ML<br/>(YOLO/HerdNet)
     participant GDrive as Google Drive
     
-    Note over User,GDrive: First Time Setup
-    API->>GDrive: Check if models exist
-    GDrive-->>API: Download best.pt & herdnet_model.pth
-    API->>DB: Initialize database schema
+    Note over User,GDrive: Configuración Primera Vez
+    API->>GDrive: Verificar si existen modelos
+    GDrive-->>API: Descargar best.pt y herdnet_model.pth
+    API->>DB: Inicializar esquema de base de datos
     
-    Note over User,GDrive: Image Analysis Workflow
-    User->>Streamlit: Upload ZIP file
-    User->>Streamlit: Select model & parameters
-    Streamlit->>API: POST /analyze-yolo or /analyze-image
+    Note over User,GDrive: Flujo de Análisis de Imagen
+    User->>Streamlit: Subir archivo ZIP
+    User->>Streamlit: Seleccionar modelo y parámetros
+    Streamlit->>API: POST /analyze-yolo o /analyze-image
     
-    API->>DB: Generate task_id, save task
-    API->>API: Extract images from ZIP
-    API->>Models: Load model & run inference
-    Models-->>API: Detection results
+    API->>DB: Generar task_id, guardar tarea
+    API->>API: Extraer imágenes del ZIP
+    API->>Models: Cargar modelo y ejecutar inferencia
+    Models-->>API: Resultados de detección
     
-    API->>API: Generate annotated images/thumbnails
-    API->>DB: Save complete results + detections
-    API-->>Streamlit: JSON response with task_id
+    API->>API: Generar imágenes anotadas/miniaturas
+    API->>DB: Guardar resultados completos + detecciones
+    API-->>Streamlit: Respuesta JSON con task_id
     
-    Streamlit->>Streamlit: Parse results & create visualizations
-    Streamlit->>User: Display table, charts, images
+    Streamlit->>Streamlit: Analizar resultados y crear visualizaciones
+    Streamlit->>User: Mostrar tabla, gráficos, imágenes
     
-    Note over User,GDrive: Retrieve Past Results
-    User->>Streamlit: Enter task_id or browse history
+    Note over User,GDrive: Recuperar Resultados Anteriores
+    User->>Streamlit: Ingresar task_id o navegar historial
     Streamlit->>API: GET /tasks/{task_id}
-    API->>DB: Query task & results
-    DB-->>API: Complete JSON response
-    API-->>Streamlit: Task data with images
-    Streamlit->>User: Display past analysis
+    API->>DB: Consultar tarea y resultados
+    DB-->>API: Respuesta JSON completa
+    API-->>Streamlit: Datos de tarea con imágenes
+    Streamlit->>User: Mostrar análisis anterior
     
-    Note over User,GDrive: View Statistics
-    User->>Streamlit: Open statistics page
+    Note over User,GDrive: Ver Estadísticas
+    User->>Streamlit: Abrir página de estadísticas
     Streamlit->>API: GET /database/stats
-    API->>DB: Aggregate statistics
-    DB-->>API: Counts & distributions
-    API-->>Streamlit: Statistics JSON
-    Streamlit->>Streamlit: Create charts
-    Streamlit->>User: Display statistics dashboard
+    API->>DB: Estadísticas agregadas
+    DB-->>API: Conteos y distribuciones
+    API-->>Streamlit: JSON de estadísticas
+    Streamlit->>Streamlit: Crear gráficos
+    Streamlit->>User: Mostrar panel de estadísticas
 ```
 
 ---
 
-## 4. Component Interaction
+## 4. Interacción de Componentes
 
 ```mermaid
 graph LR
-    subgraph "Frontend Components"
-        UI1[New Analysis Page]
-        UI2[View Results Page]
-        UI3[Statistics Page]
-        UI4[About Page]
+    subgraph "Componentes Frontend"
+        UI1[Página Nuevo Análisis]
+        UI2[Página Ver Resultados]
+        UI3[Página Estadísticas]
+        UI4[Página Acerca de]
     end
     
-    subgraph "API Endpoints"
+    subgraph "Endpoints API"
         EP1[POST /analyze-yolo]
         EP2[POST /analyze-image]
         EP3[GET /tasks]
@@ -168,18 +168,18 @@ graph LR
         EP6[GET /health]
     end
     
-    subgraph "Backend Services"
-        Service1[YOLO Inference]
-        Service2[HerdNet Inference]
-        Service3[Database Service]
-        Service4[Model Loader]
+    subgraph "Servicios Backend"
+        Service1[Inferencia YOLO]
+        Service2[Inferencia HerdNet]
+        Service3[Servicio de BD]
+        Service4[Cargador de Modelos]
     end
     
-    subgraph "Data Storage"
-        DB1[(tasks table)]
-        DB2[(task_results table)]
-        DB3[(detections table)]
-        Files[(Model Files)]
+    subgraph "Almacenamiento de Datos"
+        DB1[(tabla tasks)]
+        DB2[(tabla task_results)]
+        DB3[(tabla detections)]
+        Files[(Archivos de Modelos)]
     end
     
     UI1 --> EP1
@@ -214,31 +214,31 @@ graph LR
 
 ---
 
-## 5. Deployment Flow
+## 5. Flujo de Despliegue
 
 ```mermaid
 graph TD
-    Start([Start Deployment])
+    Start([Iniciar Despliegue])
     
-    subgraph "Backend Deployment (EC2)"
-        B1[Push code to GitHub]
-        B2[SSH into EC2 instance]
-        B3[Pull latest code]
-        B4[Build Docker image]
-        B5[Run docker-compose up]
-        B6[Models download from GDrive]
-        B7[Database initializes]
-        B8[Backend ready on port 8000]
+    subgraph "Despliegue Backend (EC2)"
+        B1[Subir código a GitHub]
+        B2[SSH a instancia EC2]
+        B3[Obtener código más reciente]
+        B4[Construir imagen Docker]
+        B5[Ejecutar docker-compose up]
+        B6[Modelos se descargan de GDrive]
+        B7[Base de datos se inicializa]
+        B8[Backend listo en puerto 8000]
     end
     
-    subgraph "Frontend Deployment (Streamlit Cloud)"
-        F1[Push code to GitHub]
-        F2[Login to Streamlit Cloud]
-        F3[Create/Update app]
-        F4[Configure settings<br/>- Python 3.11<br/>- requirements-streamlit.txt]
-        F5[Set secrets<br/>API_BASE_URL]
-        F6[Deploy app]
-        F7[Frontend ready on 8501]
+    subgraph "Despliegue Frontend (Streamlit Cloud)"
+        F1[Subir código a GitHub]
+        F2[Iniciar sesión en Streamlit Cloud]
+        F3[Crear/Actualizar app]
+        F4[Configurar ajustes<br/>- Python 3.11<br/>- requirements-streamlit.txt]
+        F5[Establecer secretos<br/>API_BASE_URL]
+        F6[Desplegar app]
+        F7[Frontend listo en 8501]
     end
     
     Start --> B1
@@ -259,11 +259,11 @@ graph TD
     F5 --> F6
     F6 --> F7
     
-    B8 --> Connected{Backend <-> Frontend<br/>Connected?}
+    B8 --> Connected{Backend <-> Frontend<br/>¿Conectado?}
     F7 --> Connected
     
-    Connected -->|Yes| Success([✅ Deployment Complete])
-    Connected -->|No| Debug[Debug connection<br/>Check API_BASE_URL<br/>Check security groups]
+    Connected -->|Sí| Success([✅ Despliegue Completo])
+    Connected -->|No| Debug[Depurar conexión<br/>Verificar API_BASE_URL<br/>Verificar grupos de seguridad]
     Debug --> Connected
     
     style B1 fill:#ffecb3
@@ -276,44 +276,44 @@ graph TD
 
 ---
 
-## 6. Security Architecture
+## 6. Arquitectura de Seguridad
 
 ```mermaid
 graph TB
-    subgraph "Public Internet"
-        Internet[🌐 Internet Users]
+    subgraph "Internet Público"
+        Internet[🌐 Usuarios de Internet]
     end
     
     subgraph "Streamlit Cloud"
         StreamlitSSL[HTTPS SSL/TLS]
-        StreamlitApp[Streamlit App<br/>No sensitive data<br/>Only UI logic]
+        StreamlitApp[App Streamlit<br/>Sin datos sensibles<br/>Solo lógica UI]
     end
     
     subgraph "AWS EC2"
-        SecurityGroup[AWS Security Group]
+        SecurityGroup[Grupo de Seguridad AWS]
         
-        subgraph "Docker Container"
-            FlaskSSL[HTTP/HTTPS<br/>Consider adding SSL]
-            FlaskApp[Flask Backend]
+        subgraph "Contenedor Docker"
+            FlaskSSL[HTTP/HTTPS<br/>Considerar agregar SSL]
+            FlaskApp[Backend Flask]
             
-            subgraph "Protected Resources"
-                DB[SQLite Database<br/>- task_id as primary key<br/>- No user authentication yet]
-                Models[ML Models<br/>Read-only access]
-                Uploads[Temporary Uploads<br/>Auto-cleanup]
+            subgraph "Recursos Protegidos"
+                DB[Base de Datos SQLite<br/>- task_id como clave primaria<br/>- Sin autenticación aún]
+                Models[Modelos ML<br/>Acceso solo lectura]
+                Uploads[Subidas Temporales<br/>Auto-limpieza]
             end
         end
     end
     
-    subgraph "External Services"
-        GDriveAPI[Google Drive API<br/>Read-only access<br/>Public folder]
+    subgraph "Servicios Externos"
+        GDriveAPI[API Google Drive<br/>Acceso solo lectura<br/>Carpeta pública]
     end
     
     Internet -->|HTTPS| StreamlitSSL
     StreamlitSSL --> StreamlitApp
-    StreamlitApp -->|HTTP API| SecurityGroup
+    StreamlitApp -->|API HTTP| SecurityGroup
     
-    SecurityGroup -->|Port 8000| FlaskSSL
-    SecurityGroup -->|Port 22 SSH<br/>IP Restricted| FlaskApp
+    SecurityGroup -->|Puerto 8000| FlaskSSL
+    SecurityGroup -->|Puerto 22 SSH<br/>IP Restringida| FlaskApp
     
     FlaskSSL --> FlaskApp
     FlaskApp --> DB
@@ -321,7 +321,7 @@ graph TB
     FlaskApp --> Uploads
     FlaskApp -.->|HTTPS| GDriveAPI
     
-    Note1[🔒 Security Measures:<br/>- Security Groups limit access<br/>- API has no authentication yet<br/>- Database stored locally<br/>- Model files read-only<br/>- Temporary files auto-deleted]
+    Note1[🔒 Medidas de Seguridad:<br/>- Grupos de seguridad limitan acceso<br/>- API sin autenticación aún<br/>- Base de datos almacenada localmente<br/>- Archivos de modelo solo lectura<br/>- Archivos temporales auto-eliminados]
     
     style SecurityGroup fill:#f44336
     style StreamlitSSL fill:#4caf50
@@ -332,56 +332,56 @@ graph TB
 
 ---
 
-## Technology Stack
+## Stack Tecnológico
 
 ### Frontend (Streamlit Cloud)
 - **Framework**: Streamlit 1.28.0
-- **Language**: Python 3.11
-- **Visualization**: Plotly
-- **HTTP Client**: requests
-- **Deployment**: Streamlit Cloud (Free Tier)
+- **Lenguaje**: Python 3.11
+- **Visualización**: Plotly
+- **Cliente HTTP**: requests
+- **Despliegue**: Streamlit Cloud (Nivel Gratuito)
 
 ### Backend (AWS EC2)
 - **Framework**: Flask 3.0.0
-- **WSGI Server**: Gunicorn
-- **Language**: Python 3.11
-- **Container**: Docker
-- **Database**: SQLite
-- **ML Models**: 
+- **Servidor WSGI**: Gunicorn
+- **Lenguaje**: Python 3.11
+- **Contenedor**: Docker
+- **Base de Datos**: SQLite
+- **Modelos ML**: 
   - YOLOv11 (ultralytics)
-  - HerdNet (custom)
-- **Deep Learning**: PyTorch
-- **Computer Vision**: OpenCV, albumentations
-- **Deployment**: AWS EC2 (Docker Compose)
+  - HerdNet (personalizado)
+- **Aprendizaje Profundo**: PyTorch
+- **Visión por Computadora**: OpenCV, albumentations
+- **Despliegue**: AWS EC2 (Docker Compose)
 
-### External Services
-- **Model Storage**: Google Drive
-- **Version Control**: GitHub
-- **CI/CD**: Manual deployment (can be automated)
+### Servicios Externos
+- **Almacenamiento de Modelos**: Google Drive
+- **Control de Versiones**: GitHub
+- **CI/CD**: Despliegue manual (puede automatizarse)
 
 ---
 
-## Scaling Considerations
+## Consideraciones de Escalabilidad
 
 ```mermaid
 graph TB
-    subgraph "Current Architecture"
-        C1[Single EC2 Instance]
-        C2[SQLite Database]
-        C3[Local Model Storage]
+    subgraph "Arquitectura Actual"
+        C1[Instancia EC2 Única]
+        C2[Base de Datos SQLite]
+        C3[Almacenamiento Local de Modelos]
     end
     
-    subgraph "Future Scaling Options"
-        S1[Load Balancer + Multiple EC2]
+    subgraph "Opciones Futuras de Escalado"
+        S1[Balanceador de Carga + Múltiples EC2]
         S2[PostgreSQL / RDS]
-        S3[S3 for Model Storage]
-        S4[Redis Cache]
-        S5[Async Queue Celery]
+        S3[S3 para Almacenamiento de Modelos]
+        S4[Caché Redis]
+        S5[Cola Asíncrona Celery]
     end
     
-    C1 -.->|Scale to| S1
-    C2 -.->|Migrate to| S2
-    C3 -.->|Move to| S3
+    C1 -.->|Escalar a| S1
+    C2 -.->|Migrar a| S2
+    C3 -.->|Mover a| S3
     S1 --> S4
     S1 --> S5
     
@@ -397,39 +397,39 @@ graph TB
 
 ---
 
-## How to Convert These to PNG
+## Cómo Convertir Estos a PNG
 
-### Option 1: Using Mermaid CLI
+### Opción 1: Usando Mermaid CLI
 ```bash
-# Install mermaid-cli
+# Instalar mermaid-cli
 npm install -g @mermaid-js/mermaid-cli
 
-# Convert to PNG
+# Convertir a PNG
 mmdc -i ARCHITECTURE_DIAGRAM.md -o architecture.png -b transparent
 ```
 
-### Option 2: Using Online Tools
-1. Copy the mermaid code
-2. Go to https://mermaid.live/
-3. Paste the code
-4. Click "Download PNG"
+### Opción 2: Usando Herramientas en Línea
+1. Copiar el código mermaid
+2. Ir a https://mermaid.live/
+3. Pegar el código
+4. Click en "Descargar PNG"
 
-### Option 3: Using VS Code Extension
-1. Install "Markdown Preview Mermaid Support" extension
-2. Open this file in VS Code
-3. Right-click on diagram → "Export as PNG"
+### Opción 3: Usando Extensión de VS Code
+1. Instalar extensión "Markdown Preview Mermaid Support"
+2. Abrir este archivo en VS Code
+3. Click derecho en diagrama → "Exportar como PNG"
 
-### Option 4: Using Python
+### Opción 4: Usando Python
 ```python
-# Install: pip install mermaid
+# Instalar: pip install mermaid
 from mermaid import Mermaid
 
 diagram = """
 graph TB
-    A[User] --> B[Streamlit]
-    B --> C[Flask API]
+    A[Usuario] --> B[Streamlit]
+    B --> C[API Flask]
 """
 
-Mermaid(diagram).to_png("diagram.png")
+Mermaid(diagram).to_png("diagrama.png")
 ```
 
