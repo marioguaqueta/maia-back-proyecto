@@ -1,0 +1,16 @@
+# Minimal requirements for Streamlit Cloud (frontend only)
+# This file is for deploying JUST the Streamlit interface
+
+# Core
+streamlit>=1.28.0,<2.0.0
+requests>=2.31.0
+pandas>=2.0.0,<2.3.0
+numpy>=1.24.0,<2.0.0
+
+# Visualization
+plotly>=5.0.0
+pillow>=10.0.0,<11.0.0
+
+# Utilities
+python-dateutil>=2.8.0
+

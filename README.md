@@ -342,13 +342,26 @@ back/
 ## 🚀 Deployment
 
 ### Local Deployment
-Use the startup scripts (`start.sh` or `start.bat`) for easy local deployment.
+Use the startup scripts for easy local deployment:
+```bash
+./start.sh  # Linux/Mac
+start.bat   # Windows
+```
 
-### Streamlit Cloud
-1. Push code to GitHub (models will auto-download)
-2. Deploy to Streamlit Cloud
-3. Set Python version to 3.8+
-4. Models download automatically on first run
+### Cloud Deployment
+
+The system has two components that need separate deployment:
+
+1. **Flask Backend** → Railway, Heroku, or Render
+2. **Streamlit Frontend** → Streamlit Cloud (free!)
+
+**📖 See [STREAMLIT_DEPLOYMENT_GUIDE.md](STREAMLIT_DEPLOYMENT_GUIDE.md) for detailed step-by-step instructions!**
+
+Quick summary:
+- Use `requirements-backend.txt` for Flask backend
+- Use `requirements-streamlit.txt` for Streamlit frontend  
+- Configure `API_BASE_URL` in Streamlit secrets to point to your backend
+- Models auto-download from Google Drive on first run
 
 ### Docker
 Docker deployment is supported. See `Dockerfile` for configuration.

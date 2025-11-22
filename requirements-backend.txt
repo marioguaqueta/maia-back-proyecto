@@ -1,7 +1,6 @@
-# Full requirements for LOCAL DEVELOPMENT (both Flask backend + Streamlit frontend)
-# For cloud deployment, use requirements-streamlit.txt or requirements-backend.txt
+# Requirements for Flask Backend (for deployment to Heroku, Railway, etc.)
 
-# Core numerical libraries - compatible with Streamlit
+# Core numerical libraries
 numpy>=1.24.0,<2.0.0
 pandas>=2.0.0,<2.3.0
 scipy>=1.10.0,<1.14.0
@@ -12,7 +11,8 @@ Flask>=3.0.0
 Werkzeug>=3.0.0
 gunicorn>=21.2.0
 
-# PyTorch - use CPU or CUDA version as needed
+# PyTorch (CPU version for cloud)
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch>=2.0.0,<2.4.0
 torchvision>=0.15.0,<0.19.0
 
@@ -23,10 +23,6 @@ albumentations>=1.3.0,<2.0.0
 # YOLO
 ultralytics>=8.0.0,<8.3.0
 
-# Streamlit and visualization
-streamlit>=1.28.0,<2.0.0
-plotly>=5.0.0
-
 # Google Drive integration
 gdown>=5.0.0
 
@@ -34,7 +30,7 @@ gdown>=5.0.0
 requests>=2.31.0
 tqdm>=4.65.0
 PyYAML>=6.0
-python-dateutil>=2.8.0
 
 # HerdNet from GitHub
 git+https://github.com/Alexandre-Delplanque/HerdNet.git
+

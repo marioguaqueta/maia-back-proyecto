@@ -12,9 +12,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from datetime import datetime
+import os
 
-# Configuration
-API_BASE_URL = "http://localhost:8000"
+# Configuration - can be overridden via environment variable or Streamlit secrets
+API_BASE_URL = os.getenv(
+    "API_BASE_URL",
+    st.secrets.get("API_BASE_URL", "http://localhost:8000")
+)
 
 # Page config
 st.set_page_config(
