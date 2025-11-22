@@ -114,7 +114,7 @@ print("\nLoading YOLOv11 model...")
 try:
     from ultralytics import YOLO
     
-    YOLO_MODEL_PATH = "./yolov11_g12_v1.pt"
+    YOLO_MODEL_PATH = "./best.pt"
     yolo_model = YOLO(YOLO_MODEL_PATH)
     yolo_model.to(device)
     
