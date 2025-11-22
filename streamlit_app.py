@@ -397,6 +397,141 @@ def show_image_modal(img_data, img_name, model_type):
     )
 
 
+def render_yolo_image_card(img_data, all_detections, img_idx):
+    """
+    Renderiza una tarjeta de imagen con detecciones YOLO.
+    Función recursiva que maneja cada imagen individualmente.
+    """
+    # Crear contenedor de tarjeta
+    with st.container():
+        # Encabezado de tarjeta
+        st.markdown(f"""
+        <div class="result-card">
+            <div class="card-header">📷 {img_data['image_name']}</div>
+            <div class="card-subtitle">
+                <span class="detection-badge">🎯 {img_data['detections_count']} detecciones</span>
+                <span class="size-badge">📐 {img_data.get('original_size', {}).get('width', '?')} × {img_data.get('original_size', {}).get('height', '?')} px</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Mostrar imagen anotada
+        img_bytes = base64.b64decode(img_data['annotated_image_base64'])
+        img = Image.open(BytesIO(img_bytes))
+        
+        # Contenedor de imagen
+        st.markdown('<div class="image-container">', unsafe_allow_html=True)
+        st.image(img, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Obtener detecciones para esta imagen
+        image_detections = [d for d in all_detections if d.get('image') == img_data['image_name']]
+        
+        # Tabla de detección colapsable
+        with st.expander(f"📊 Ver Detalles de Detección ({len(image_detections)} elementos)", expanded=False):
+            if image_detections:
+                # Crear DataFrame para detecciones
+                det_data = []
+                for det in image_detections:
+                    det_data.append({
+                        'Especie': det.get('class_name', 'Desconocido'),
+                        'Confianza': f"{det.get('confidence', 0):.2%}",
+                        'X': f"{det.get('center', {}).get('x', 0):.1f}",
+                        'Y': f"{det.get('center', {}).get('y', 0):.1f}",
+                        'Ancho': f"{det.get('bbox', {}).get('x2', 0) - det.get('bbox', {}).get('x1', 0):.1f}",
+                        'Alto': f"{det.get('bbox', {}).get('y2', 0) - det.get('bbox', {}).get('y1', 0):.1f}"
+                    })
+                
+                det_df = pd.DataFrame(det_data)
+                st.dataframe(det_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("No hay detecciones para esta imagen")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+
+
+def render_herdnet_image_card(plot_data, all_detections, plot_idx):
+    """
+    Renderiza una tarjeta de gráfico con detecciones HerdNet.
+    Función recursiva que maneja cada gráfico individualmente.
+    """
+    # Crear contenedor de tarjeta
+    with st.container():
+        # Encabezado de tarjeta
+        st.markdown(f"""
+        <div class="result-card">
+            <div class="card-header">📍 {plot_data['image_name']}</div>
+            <div class="card-subtitle">
+                <span class="detection-badge">🎯 {plot_data.get('detections_count', 0)} detecciones</span>
+                <span class="size-badge">🗺️ Gráfico de Detección HerdNet</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Mostrar gráfico
+        img_bytes = base64.b64decode(plot_data['plot_base64'])
+        img = Image.open(BytesIO(img_bytes))
+        
+        # Contenedor de imagen
+        st.markdown('<div class="image-container">', unsafe_allow_html=True)
+        st.image(img, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Obtener detecciones para esta imagen
+        image_detections = [d for d in all_detections if d.get('images') == plot_data['image_name']]
+        
+        # Tabla de detección colapsable
+        with st.expander(f"📊 Ver Detalles de Detección ({len(image_detections)} elementos)", expanded=False):
+            if image_detections:
+                # Crear DataFrame para detecciones
+                det_data = []
+                for det in image_detections:
+                    det_data.append({
+                        'Especie': det.get('species', 'Desconocido'),
+                        'Confianza': f"{det.get('scores', 0):.2%}",
+                        'X': f"{det.get('x', 0):.1f}",
+                        'Y': f"{det.get('y', 0):.1f}"
+                    })
+                
+                det_df = pd.DataFrame(det_data)
+                st.dataframe(det_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("No hay detecciones para esta imagen")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+
+
+def render_images_recursively(images, all_detections, render_func, images_per_row=2):
+    """
+    Renderiza imágenes de forma recursiva en una cuadrícula.
+    
+    Args:
+        images: Lista de imágenes a renderizar
+        all_detections: Todas las detecciones del análisis
+        render_func: Función para renderizar cada imagen (render_yolo_image_card o render_herdnet_image_card)
+        images_per_row: Número de imágenes por fila (default: 2)
+    """
+    if not images:
+        return
+    
+    # Procesar imágenes en grupos de images_per_row
+    for idx in range(0, len(images), images_per_row):
+        # Crear columnas
+        cols = st.columns(images_per_row)
+        
+        # Renderizar cada imagen en su columna
+        for col_idx in range(images_per_row):
+            img_idx = idx + col_idx
+            
+            # Verificar si hay más imágenes
+            if img_idx >= len(images):
+                break
+            
+            with cols[col_idx]:
+                # Llamada recursiva a la función de renderizado
+                render_func(images[img_idx], all_detections, img_idx)
+
+
 def display_results(result, model_choice, file_type='zip'):
     """Mostrar resultados del análisis."""
     st.success("✅ ¡Análisis Completo!")
@@ -436,161 +571,38 @@ def display_results(result, model_choice, file_type='zip'):
             st.plotly_chart(fig, use_container_width=True)
     
     # ========================================
-    # Tarjetas de Imágenes con Resultados
+    # Tarjetas de Imágenes con Resultados (Renderizado Recursivo)
     # ========================================
     
-    # Imágenes anotadas (YOLO) - Diseño de tarjetas
+    # Imágenes anotadas (YOLO)
     if 'annotated_images' in result:
         st.subheader("🖼️ Imágenes Anotadas - Resultados")
         
         # Obtener detecciones para tabla
         all_detections = result.get('detections', [])
         
-        # Crear tarjetas en cuadrícula de 2 columnas
-        for idx in range(0, len(result['annotated_images']), 2):
-            cols = st.columns(2)
-            
-            for col_idx, col in enumerate(cols):
-                img_idx = idx + col_idx
-                if img_idx >= len(result['annotated_images']):
-                    break
-                
-                img_data = result['annotated_images'][img_idx]
-                
-                with col:
-                    # Crear contenedor de tarjeta
-                    with st.container():
-                        # Encabezado de tarjeta
-                        st.markdown(f"""
-                        <div class="result-card">
-                            <div class="card-header">📷 {img_data['image_name']}</div>
-                            <div class="card-subtitle">
-                                <span class="detection-badge">🎯 {img_data['detections_count']} detecciones</span>
-                                <span class="size-badge">📐 {img_data.get('original_size', {}).get('width', '?')} × {img_data.get('original_size', {}).get('height', '?')} px</span>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Mostrar imagen anotada
-                        img_bytes = base64.b64decode(img_data['annotated_image_base64'])
-                        img = Image.open(BytesIO(img_bytes))
-                        
-                        # Contenedor de imagen
-                        st.markdown('<div class="image-container">', unsafe_allow_html=True)
-                        st.image(img, use_container_width=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        # Obtener detecciones para esta imagen
-                        image_detections = [d for d in all_detections if d.get('image') == img_data['image_name']]
-                        
-                        # Tabla de detección colapsable
-                        with st.expander(f"📊 Ver Detalles de Detección ({len(image_detections)} elementos)", expanded=False):
-                            if image_detections:
-                                # Crear DataFrame para detecciones
-                                det_data = []
-                                for det in image_detections:
-                                    det_data.append({
-                                        'Especie': det.get('class_name', 'Desconocido'),
-                                        'Confianza': f"{det.get('confidence', 0):.2%}",
-                                        'X': f"{det.get('center', {}).get('x', 0):.1f}",
-                                        'Y': f"{det.get('center', {}).get('y', 0):.1f}",
-                                        'Ancho': f"{det.get('bbox', {}).get('x2', 0) - det.get('bbox', {}).get('x1', 0):.1f}",
-                                        'Alto': f"{det.get('bbox', {}).get('y2', 0) - det.get('bbox', {}).get('y1', 0):.1f}"
-                                    })
-                                
-                                det_df = pd.DataFrame(det_data)
-                                st.dataframe(det_df, use_container_width=True, hide_index=True)
-                            else:
-                                st.info("No hay detecciones para esta imagen")
-                        
-                        # Botones de acción
-                        col_btn2 = st.columns(1)
-                        
-                        with col_btn2:
-                            st.download_button(
-                                label="⬇️ Descargar Imagen",
-                                data=img_bytes,
-                                file_name=img_data['image_name'],
-                                mime="image/png",
-                                key=f"dl_yolo_{img_idx}",
-                                use_container_width=True
-                            )
-                        
-                        st.markdown("<br>", unsafe_allow_html=True)
+        # Renderizar imágenes recursivamente (sin botones)
+        render_images_recursively(
+            images=result['annotated_images'],
+            all_detections=all_detections,
+            render_func=render_yolo_image_card,
+            images_per_row=2
+        )
     
-    # Gráficos de detección (HerdNet) - Diseño de tarjetas
+    # Gráficos de detección (HerdNet)
     if 'plots' in result:
         st.subheader("🗺️ Gráficos de Detección - Resultados")
         
         # Obtener detecciones para tabla
         all_detections = result.get('detections', [])
         
-        # Crear tarjetas en cuadrícula de 2 columnas
-        for idx in range(0, len(result['plots']), 2):
-            cols = st.columns(2)
-            
-            for col_idx, col in enumerate(cols):
-                plot_idx = idx + col_idx
-                if plot_idx >= len(result['plots']):
-                    break
-                
-                plot_data = result['plots'][plot_idx]
-                
-                with col:
-                    # Crear contenedor de tarjeta
-                    with st.container():
-                        # Encabezado de tarjeta
-                        st.markdown(f"""
-                        <div class="result-card">
-                            <div class="card-header">📍 {plot_data['image_name']}</div>
-                            <div class="card-subtitle">Gráfico de Detección HerdNet</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Mostrar gráfico
-                        img_bytes = base64.b64decode(plot_data['plot_base64'])
-                        img = Image.open(BytesIO(img_bytes))
-                        
-                        # Contenedor de imagen
-                        st.markdown('<div class="image-container">', unsafe_allow_html=True)
-                        st.image(img, use_container_width=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        # Obtener detecciones para esta imagen
-                        image_detections = [d for d in all_detections if d.get('images') == plot_data['image_name']]
-                        
-                        # Tabla de detección colapsable
-                        with st.expander(f"📊 Ver Detalles de Detección ({len(image_detections)} elementos)", expanded=False):
-                            if image_detections:
-                                # Crear DataFrame para detecciones
-                                det_data = []
-                                for det in image_detections:
-                                    det_data.append({
-                                        'Especie': det.get('species', 'Desconocido'),
-                                        'Confianza': f"{det.get('scores', 0):.2%}",
-                                        'X': f"{det.get('x', 0):.1f}",
-                                        'Y': f"{det.get('y', 0):.1f}"
-                                    })
-                                
-                                det_df = pd.DataFrame(det_data)
-                                st.dataframe(det_df, use_container_width=True, hide_index=True)
-                            else:
-                                st.info("No hay detecciones para esta imagen")
-                        
-                        # Botones de acción
-                        col_btn2 = st.columns(1)
-        
-                        with col_btn2:
-                            st.download_button(
-                                label="⬇️ Descargar Gráfico",
-                                data=img_bytes,
-                                file_name=f"plot_{plot_data['image_name']}",
-                                mime="image/png",
-                                key=f"dl_plot_{plot_idx}",
-                                use_container_width=True
-                            )
-                        
-                        st.markdown("<br>", unsafe_allow_html=True)
+        # Renderizar gráficos recursivamente (sin botones)
+        render_images_recursively(
+            images=result['plots'],
+            all_detections=all_detections,
+            render_func=render_herdnet_image_card,
+            images_per_row=2
+        )
     
     # Miniaturas (HerdNet) - mantener vista de miniaturas existente
     if 'thumbnails' in result:
