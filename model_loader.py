@@ -11,11 +11,11 @@ GDRIVE_FOLDER_ID = "1BMy6W7_3JhSA6uSEzze48ZR22qJv4s2R"
 # Model configurations
 MODELS = {
     'yolo': {
-        'filename': 'best.pt',
+        'filename': 'yolov11_g12_v1.pt',
         'description': 'YOLOv11 model'
     },
     'herdnet': {
-        'filename': 'herdnet_model.pth',
+        'filename': 'herdnet_baseline_model.pth',
         'description': 'HerdNet model'
     }
 }
