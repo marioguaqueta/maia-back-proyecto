@@ -93,20 +93,25 @@ streamlit run streamlit_app.py
 
 ## 🌐 Using the Streamlit Interface
 
-The Streamlit web interface provides an easy way to use the system:
+The Streamlit web interface provides a beautiful, card-based UI for easy system access:
 
 ### 📁 New Analysis Page
 1. Upload a ZIP file with wildlife images
 2. Select YOLOv11 or HerdNet model
 3. Configure parameters (confidence, patch size, etc.)
 4. Click "Run Analysis"
-5. View results with charts and annotated images
+5. **View results in modern card layout:**
+   - 🖼️ **Image Cards**: Each image in its own styled card
+   - 🎯 **Detection Badges**: Color-coded counts and dimensions
+   - 📊 **Collapsible Tables**: Expandable detection details per image
+   - 🔍 **Interactive Viewer**: Full-size view with zoom & pan
+   - ⬇️ **Quick Download**: Direct download from each card
 6. Save the task_id to retrieve results later
 
 ### 📊 View Results Page
 - Browse all past analyses
 - Filter by model type and status
-- View full JSON results
+- View full JSON results in card format
 - See processing statistics
 
 ### 📈 Statistics Page
@@ -119,6 +124,15 @@ The Streamlit web interface provides an easy way to use the system:
 - Model information and comparisons
 - Supported species
 - Citation information
+
+### 🎨 Card-Based UI Features
+- **2-Column Grid Layout**: Gallery-style image browsing
+- **Hover Effects**: Smooth animations and shadows
+- **Responsive Design**: Adapts to screen size
+- **Collapsible Details**: Keep UI clean, expand when needed
+- **Integrated Actions**: View and download directly from cards
+
+For more details, see [`CARD_UI_DESIGN.md`](CARD_UI_DESIGN.md)
 
 ## 🔌 API Endpoints
 

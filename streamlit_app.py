@@ -39,6 +39,73 @@ st.markdown("""
     border-radius: 10px;
     background-color: #f0f2f6;
 }
+
+/* Card styling for results */
+.result-card {
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.result-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    margin-top: 0;
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.card-subtitle {
+    color: #666;
+    font-size: 14px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+
+.detection-badge {
+    display: inline-block;
+    background-color: #4CAF50;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.size-badge {
+    display: inline-block;
+    background-color: #2196F3;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Expander styling */
+.stExpander {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: white;
+    margin-top: 10px;
+}
+
+/* Image container */
+.image-container {
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -322,94 +389,167 @@ def display_results(result, model_choice):
             st.plotly_chart(fig, use_container_width=True)
     
     # ========================================
-    # NEW: Detections Table by Image
-    # ========================================
-    st.subheader("📋 Detections by Image")
-    detections_df = create_detections_table(result, model_choice)
-    
-    if detections_df is not None:
-        st.dataframe(
-            detections_df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Image": st.column_config.TextColumn("Image", width="medium"),
-                "Total": st.column_config.NumberColumn("Total", width="small"),
-            }
-        )
-        
-        # Download CSV button
-        csv = detections_df.to_csv(index=False)
-        st.download_button(
-            label="⬇️ Download Table as CSV",
-            data=csv,
-            file_name=f"detections_table_{result.get('task_id', 'results')}.csv",
-            mime="text/csv"
-        )
-    
-    # ========================================
-    # NEW: Image Gallery with View Buttons
+    # Image Cards with Results
     # ========================================
     
-    # Annotated images (YOLO)
+    # Annotated images (YOLO) - Card Layout
     if 'annotated_images' in result:
-        st.subheader("🖼️ Annotated Images Gallery")
+        st.subheader("🖼️ Annotated Images - Results")
         
-        # Create a mapping of image names to data
-        image_map = {img['image_name']: img for img in result['annotated_images']}
+        # Get detections for table
+        all_detections = result.get('detections', [])
         
-        # Display in a grid
-        for idx, img_data in enumerate(result['annotated_images']):
-            col1, col2, col3 = st.columns([3, 1, 1])
+        # Create cards in a 2-column grid
+        for idx in range(0, len(result['annotated_images']), 2):
+            cols = st.columns(2)
             
-            with col1:
-                st.write(f"**{img_data['image_name']}**")
-                st.caption(f"🎯 {img_data['detections_count']} detections | Size: {img_data.get('original_size', {}).get('width', '?')} × {img_data.get('original_size', {}).get('height', '?')} px")
-            
-            with col2:
-                if st.button(f"👁️ View", key=f"view_yolo_{idx}"):
-                    show_image_modal(img_data, img_data['image_name'], "yolo")
-            
-            with col3:
-                # Download button for this specific image
-                img_bytes = base64.b64decode(img_data['annotated_image_base64'])
-                st.download_button(
-                    label="⬇️ Download",
-                    data=img_bytes,
-                    file_name=img_data['image_name'],
-                    mime="image/png",
-                    key=f"dl_yolo_{idx}"
-                )
-            
-            st.markdown("---")
+            for col_idx, col in enumerate(cols):
+                img_idx = idx + col_idx
+                if img_idx >= len(result['annotated_images']):
+                    break
+                
+                img_data = result['annotated_images'][img_idx]
+                
+                with col:
+                    # Create card container
+                    with st.container():
+                        # Card header
+                        st.markdown(f"""
+                        <div class="result-card">
+                            <div class="card-header">📷 {img_data['image_name']}</div>
+                            <div class="card-subtitle">
+                                <span class="detection-badge">🎯 {img_data['detections_count']} detections</span>
+                                <span class="size-badge">📐 {img_data.get('original_size', {}).get('width', '?')} × {img_data.get('original_size', {}).get('height', '?')} px</span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Display annotated image
+                        img_bytes = base64.b64decode(img_data['annotated_image_base64'])
+                        img = Image.open(BytesIO(img_bytes))
+                        
+                        # Image container
+                        st.markdown('<div class="image-container">', unsafe_allow_html=True)
+                        st.image(img, use_container_width=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        
+                        # Get detections for this image
+                        image_detections = [d for d in all_detections if d.get('image') == img_data['image_name']]
+                        
+                        # Collapsible detection table
+                        with st.expander(f"📊 View Detection Details ({len(image_detections)} items)", expanded=False):
+                            if image_detections:
+                                # Create DataFrame for detections
+                                det_data = []
+                                for det in image_detections:
+                                    det_data.append({
+                                        'Species': det.get('class_name', 'Unknown'),
+                                        'Confidence': f"{det.get('confidence', 0):.2%}",
+                                        'X': f"{det.get('center', {}).get('x', 0):.1f}",
+                                        'Y': f"{det.get('center', {}).get('y', 0):.1f}",
+                                        'Width': f"{det.get('bbox', {}).get('x2', 0) - det.get('bbox', {}).get('x1', 0):.1f}",
+                                        'Height': f"{det.get('bbox', {}).get('y2', 0) - det.get('bbox', {}).get('y1', 0):.1f}"
+                                    })
+                                
+                                det_df = pd.DataFrame(det_data)
+                                st.dataframe(det_df, use_container_width=True, hide_index=True)
+                            else:
+                                st.info("No detections for this image")
+                        
+                        # Action buttons
+                        col_btn1, col_btn2 = st.columns(2)
+                        with col_btn1:
+                            if st.button(f"🔍 View Full Size", key=f"view_yolo_{img_idx}", use_container_width=True):
+                                show_image_modal(img_data, img_data['image_name'], "yolo")
+                        
+                        with col_btn2:
+                            st.download_button(
+                                label="⬇️ Download Image",
+                                data=img_bytes,
+                                file_name=img_data['image_name'],
+                                mime="image/png",
+                                key=f"dl_yolo_{img_idx}",
+                                use_container_width=True
+                            )
+                        
+                        st.markdown("<br>", unsafe_allow_html=True)
     
-    # Detection plots (HerdNet)
+    # Detection plots (HerdNet) - Card Layout
     if 'plots' in result:
-        st.subheader("🗺️ Detection Plots Gallery")
+        st.subheader("🗺️ Detection Plots - Results")
         
-        for idx, plot_data in enumerate(result['plots']):
-            col1, col2, col3 = st.columns([3, 1, 1])
+        # Get detections for table
+        all_detections = result.get('detections', [])
+        
+        # Create cards in a 2-column grid
+        for idx in range(0, len(result['plots']), 2):
+            cols = st.columns(2)
             
-            with col1:
-                st.write(f"**{plot_data['image_name']}**")
-                st.caption(f"📍 Detection plot with points")
-            
-            with col2:
-                if st.button(f"👁️ View", key=f"view_plot_{idx}"):
-                    show_image_modal(plot_data, plot_data['image_name'], "herdnet")
-            
-            with col3:
-                # Download button
-                img_bytes = base64.b64decode(plot_data['plot_base64'])
-                st.download_button(
-                    label="⬇️ Download",
-                    data=img_bytes,
-                    file_name=f"plot_{plot_data['image_name']}",
-                    mime="image/png",
-                    key=f"dl_plot_{idx}"
-                )
-            
-            st.markdown("---")
+            for col_idx, col in enumerate(cols):
+                plot_idx = idx + col_idx
+                if plot_idx >= len(result['plots']):
+                    break
+                
+                plot_data = result['plots'][plot_idx]
+                
+                with col:
+                    # Create card container
+                    with st.container():
+                        # Card header
+                        st.markdown(f"""
+                        <div class="result-card">
+                            <div class="card-header">📍 {plot_data['image_name']}</div>
+                            <div class="card-subtitle">HerdNet Detection Plot</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Display plot
+                        img_bytes = base64.b64decode(plot_data['plot_base64'])
+                        img = Image.open(BytesIO(img_bytes))
+                        
+                        # Image container
+                        st.markdown('<div class="image-container">', unsafe_allow_html=True)
+                        st.image(img, use_container_width=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        
+                        # Get detections for this image
+                        image_detections = [d for d in all_detections if d.get('images') == plot_data['image_name']]
+                        
+                        # Collapsible detection table
+                        with st.expander(f"📊 View Detection Details ({len(image_detections)} items)", expanded=False):
+                            if image_detections:
+                                # Create DataFrame for detections
+                                det_data = []
+                                for det in image_detections:
+                                    det_data.append({
+                                        'Species': det.get('species', 'Unknown'),
+                                        'Confidence': f"{det.get('scores', 0):.2%}",
+                                        'X': f"{det.get('x', 0):.1f}",
+                                        'Y': f"{det.get('y', 0):.1f}"
+                                    })
+                                
+                                det_df = pd.DataFrame(det_data)
+                                st.dataframe(det_df, use_container_width=True, hide_index=True)
+                            else:
+                                st.info("No detections for this image")
+                        
+                        # Action buttons
+                        col_btn1, col_btn2 = st.columns(2)
+                        with col_btn1:
+                            if st.button(f"🔍 View Full Size", key=f"view_plot_{plot_idx}", use_container_width=True):
+                                show_image_modal(plot_data, plot_data['image_name'], "herdnet")
+                        
+                        with col_btn2:
+                            st.download_button(
+                                label="⬇️ Download Plot",
+                                data=img_bytes,
+                                file_name=f"plot_{plot_data['image_name']}",
+                                mime="image/png",
+                                key=f"dl_plot_{plot_idx}",
+                                use_container_width=True
+                            )
+                        
+                        st.markdown("<br>", unsafe_allow_html=True)
     
     # Thumbnails (HerdNet) - keep existing thumbnail view
     if 'thumbnails' in result:
