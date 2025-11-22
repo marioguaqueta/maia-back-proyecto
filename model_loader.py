@@ -6,7 +6,7 @@ import os
 import gdown
 
 # Google Drive folder ID
-GDRIVE_FOLDER_ID = "11uMn45darEtFHz1CLe94hxVtRRA99ERd"
+GDRIVE_FOLDER_ID = "1BMy6W7_3JhSA6uSEzze48ZR22qJv4s2R"
 
 # Model configurations
 MODELS = {

@@ -69,7 +69,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 # Load checkpoint
-MODEL_PATH = "./herdnet_model.pth"
+MODEL_PATH = "./herdnet_baseline_model.pth"
 print(f"Loading checkpoint from {MODEL_PATH}...")
 
 map_location = torch.device('cpu')
@@ -114,7 +114,7 @@ print("\nLoading YOLOv11 model...")
 try:
     from ultralytics import YOLO
     
-    YOLO_MODEL_PATH = "./best.pt"
+    YOLO_MODEL_PATH = "./yolov11_g12_v1.pt"
     yolo_model = YOLO(YOLO_MODEL_PATH)
     yolo_model.to(device)
     
