@@ -2,6 +2,83 @@
 
 All notable changes to the Wildlife Detection API project.
 
+## [2.3.2] - 2024-11-22
+
+### 🇪🇸 Spanish Labels for All Detections
+
+#### Species Names in Spanish
+- **IMPLEMENTED**: All animal detection labels now appear in Spanish
+- **APPLIED TO**: Both YOLOv11 and HerdNet models
+- **LOCATIONS**: JSON responses, annotated images, plots, database, and Streamlit UI
+
+### 🦁 Species Translations
+
+| English | Spanish |
+|---------|---------|
+| buffalo | Búfalo |
+| elephant | Elefante |
+| kob | Kob |
+| topi | Topi |
+| warthog | Jabalí Verrugoso |
+| waterbuck | Antílope Acuático |
+
+### 🔧 Technical Implementation
+
+**Core Changes:**
+- Added `SPANISH_NAMES` dictionary with translations
+- Created `translate_to_spanish()` helper function
+- Modified YOLO model names to use Spanish labels in annotated images
+- Updated all detection processing to translate species names
+
+**Modified Locations:**
+1. YOLO batch processing - detections and species counts in Spanish
+2. YOLO single image - detections and species counts in Spanish
+3. HerdNet batch processing - detections and species counts in Spanish
+4. HerdNet single image - detections and species counts in Spanish
+5. HerdNet plot labels - visualization with Spanish class names
+6. YOLO annotated images - bounding boxes labeled in Spanish
+
+### 📊 Impact
+
+**JSON Responses:**
+```json
+{
+  "detections": [
+    {"class_name": "Elefante", "confidence": 0.95}
+  ],
+  "species_counts": {
+    "Elefante": 12,
+    "Búfalo": 8
+  }
+}
+```
+
+**Annotated Images:**
+- YOLO boxes: "Elefante 0.95", "Búfalo 0.87"
+- HerdNet plots: "● Elefante", "● Búfalo"
+
+**Database:**
+- All new detections stored with Spanish names
+- Existing data remains in English (backward compatible)
+
+**Streamlit:**
+- Tables, charts, and cards display Spanish species names
+- No frontend changes required - automatic
+
+### 📝 Documentation
+
+- **CREATED**: `SPANISH_LABELS.md` - Complete implementation guide
+  - Translation dictionary
+  - Technical details
+  - Testing procedures
+  - Examples and verification steps
+
+### ✅ Files Modified
+
+- `app.py` - 8 locations updated for Spanish labels
+
+---
+
 ## [2.3.1] - 2024-11-22
 
 ### 🇪🇸 Documentation Translation - Architecture Diagrams

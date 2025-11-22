@@ -95,6 +95,21 @@ print(f"Normalization - Mean: {img_mean}, Std: {img_std}")
 ANIMAL_CLASSES = {0: "no_animal"}
 ANIMAL_CLASSES.update(classes_dict)
 
+# Spanish translations for animal classes
+SPANISH_NAMES = {
+    'buffalo': 'Búfalo',
+    'elephant': 'Elefante',
+    'kob': 'Kob',
+    'topi': 'Topi',
+    'warthog': 'Jabalí Verrugoso',
+    'waterbuck': 'Antílope Acuático',
+    'no_animal': 'Sin Animal'
+}
+
+def translate_to_spanish(english_name):
+    """Translate animal class name to Spanish."""
+    return SPANISH_NAMES.get(english_name.lower(), english_name)
+
 # Build the model
 print("Building HerdNet model...")
 model = HerdNet(num_classes=num_classes, pretrained=False)
@@ -121,8 +136,13 @@ try:
     # Get class names from the model
     YOLO_CLASSES = yolo_model.names  # Dictionary of class ID to class name
     
+    # Translate YOLO class names to Spanish for display in annotated images
+    YOLO_CLASSES_SPANISH = {k: translate_to_spanish(v) for k, v in YOLO_CLASSES.items()}
+    yolo_model.names = YOLO_CLASSES_SPANISH  # Update model names for plot() to use Spanish
+    
     print(f"✓ YOLOv11 model loaded successfully")
     print(f"  Model classes: {YOLO_CLASSES}")
+    print(f"  Spanish labels: {YOLO_CLASSES_SPANISH}")
     print(f"  Number of classes: {len(YOLO_CLASSES)}")
     yolo_loaded = True
 except Exception as e:
@@ -209,7 +229,9 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
                     confidence = float(box.conf[0])
                     bbox = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
                     
-                    class_name = YOLO_CLASSES.get(class_id, f"class_{class_id}")
+                    # Get class name in English and translate to Spanish
+                    class_name_en = YOLO_CLASSES.get(class_id, f"class_{class_id}")
+                    class_name = translate_to_spanish(class_name_en)
                     
                     # Update species counts
                     species_counts[class_name] = species_counts.get(class_name, 0) + 1
@@ -441,7 +463,9 @@ def analyze_images_with_evaluator(image_dir, patch_size=512, overlap=160, rotati
     # Get detections
     detections = evaluator.detections
     detections.dropna(inplace=True)
-    detections['species'] = detections['labels'].map(classes_dict)
+    # Map to Spanish names
+    classes_dict_spanish = {k: translate_to_spanish(v) for k, v in classes_dict.items()}
+    detections['species'] = detections['labels'].map(classes_dict_spanish)
     
     # Save detections CSV
     csv_path = os.path.join(results_dir, 'detections.csv')
@@ -1012,8 +1036,9 @@ def analyze_single_image_yolo_endpoint():
                 conf = float(box.conf[0].item())
                 xyxy = box.xyxy[0].tolist()
                 
-                # Get class name
-                class_name = result.names[cls_id]
+                # Get class name in English and translate to Spanish
+                class_name_en = result.names[cls_id]
+                class_name = translate_to_spanish(class_name_en)
                 
                 # Count species
                 species_counts[class_name] = species_counts.get(class_name, 0) + 1
@@ -1261,7 +1286,9 @@ def analyze_single_image_herdnet_endpoint():
             
             for point, cls, score in zip(point_list, class_list, scores_list):
                 x, y = point
-                species = ANIMAL_CLASSES.get(cls, f"class_{cls}")
+                # Get species name in English and translate to Spanish
+                species_en = ANIMAL_CLASSES.get(cls, f"class_{cls}")
+                species = translate_to_spanish(species_en)
                 
                 # Count species
                 species_counts[species] = species_counts.get(species, 0) + 1
@@ -1334,13 +1361,14 @@ def analyze_single_image_herdnet_endpoint():
             if include_plots and len(detections) > 0:
                 plots = []
                 
-                # Create plot
-                class_labels = [ANIMAL_CLASSES.get(i, f"class_{i}") for i in range(len(ANIMAL_CLASSES))]
+                # Create plot with Spanish labels
+                class_labels_spanish = [translate_to_spanish(ANIMAL_CLASSES.get(i, f"class_{i}")) 
+                                       for i in range(len(ANIMAL_CLASSES))]
                 plot_img = draw_points(
                     image=image_np.copy(),
                     points=point_list,
                     classes=class_list,
-                    class_labels=class_labels,
+                    class_labels=class_labels_spanish,
                     radius=10
                 )
                 
