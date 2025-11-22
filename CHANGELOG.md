@@ -2,6 +2,79 @@
 
 All notable changes to the Wildlife Detection API project.
 
+## [2.3.3] - 2024-11-22
+
+### 🔄 Refactor: Spanish Translation - No Model Interference
+
+**Major refactor to completely eliminate model interference from translation system.**
+
+#### Architecture Change
+
+**Before:**
+- Translation happened **during** detection processing
+- Could interfere with model internals
+- Difficult to debug
+
+**Now:**
+- All processing in English (models work natively)
+- Translation **only at the end** before returning response
+- Complete separation of concerns: processing vs presentation
+
+#### New Translation Function
+
+```python
+def translate_results_to_spanish(results):
+    """Translate all species names at the end, no model interference."""
+    # Translates detections, species_counts, and summary
+    # Applied right before returning to user
+```
+
+#### Changes Made
+
+**Modified 5 Endpoints:**
+1. `/analyze-yolo` - Translate final response
+2. `/analyze-image` - Translate final response
+3. `/analyze-single-image-yolo` - Translate final response
+4. `/analyze-single-image-herdnet` - Translate final response
+5. `analyze_images_with_yolo()` internal function
+
+**Removed:**
+- ❌ Translation during detection loops
+- ❌ Translation during species counting
+- ❌ Translation during DataFrame mapping
+
+**Added:**
+- ✅ `translate_results_to_spanish()` function
+- ✅ Translation call before each endpoint return
+- ✅ Clean separation of processing and presentation
+
+#### Benefits
+
+- ✅ **Zero model interference** - models work with native English names
+- ✅ **Cleaner code** - single translation function
+- ✅ **Easier debugging** - internal logs in English, responses in Spanish
+- ✅ **Extensible** - easy to add more languages
+- ✅ **Consistent** - all endpoints use same pattern
+
+#### Result
+
+- ✅ Models load without errors
+- ✅ Processing 100% in English (internal)
+- ✅ Responses 100% in Spanish (user-facing)
+- ✅ Database stores Spanish names
+- ✅ Streamlit displays Spanish names
+- ✅ No interference with YOLO or HerdNet
+
+### 📝 Documentation
+
+- **CREATED**: `SPANISH_REFACTOR.md` - Complete refactor documentation
+  - Architecture diagrams
+  - Before/after code comparison
+  - Testing procedures
+  - Benefits and lessons learned
+
+---
+
 ## [2.3.2] - 2024-11-22
 
 ### 🔧 Fixed: YOLO Model Loading Error

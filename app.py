@@ -110,6 +110,38 @@ def translate_to_spanish(english_name):
     """Translate animal class name to Spanish."""
     return SPANISH_NAMES.get(english_name.lower(), english_name)
 
+def translate_results_to_spanish(results):
+    """
+    Translate all species names in results dictionary from English to Spanish.
+    This is done at the end to avoid interfering with model processing.
+    """
+    if not results:
+        return results
+    
+    # Translate detections
+    if 'detections' in results:
+        for det in results['detections']:
+            if 'class_name' in det:
+                det['class_name'] = translate_to_spanish(det['class_name'])
+            if 'species' in det:
+                det['species'] = translate_to_spanish(det['species'])
+    
+    # Translate species_counts
+    if 'species_counts' in results:
+        translated_counts = {}
+        for species, count in results['species_counts'].items():
+            translated_counts[translate_to_spanish(species)] = count
+        results['species_counts'] = translated_counts
+    
+    # Translate summary species_counts
+    if 'summary' in results and 'species_counts' in results['summary']:
+        translated_counts = {}
+        for species, count in results['summary']['species_counts'].items():
+            translated_counts[translate_to_spanish(species)] = count
+        results['summary']['species_counts'] = translated_counts
+    
+    return results
+
 # Build the model
 print("Building HerdNet model...")
 model = HerdNet(num_classes=num_classes, pretrained=False)
@@ -224,9 +256,8 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
                     confidence = float(box.conf[0])
                     bbox = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
                     
-                    # Get class name in English and translate to Spanish
-                    class_name_en = YOLO_CLASSES.get(class_id, f"class_{class_id}")
-                    class_name = translate_to_spanish(class_name_en)
+                    # Get class name (keep in English during processing)
+                    class_name = YOLO_CLASSES.get(class_id, f"class_{class_id}")
                     
                     # Update species counts
                     species_counts[class_name] = species_counts.get(class_name, 0) + 1
@@ -346,7 +377,7 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
         'images_without_detections_list': images_without_animals
     }
     
-    return {
+    results = {
         'summary': summary,
         'detections': all_detections,
         'annotated_images': annotated_images,
@@ -356,6 +387,9 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
             'img_size': img_size
         }
     }
+    
+    # Translate results to Spanish before returning
+    return translate_results_to_spanish(results)
 
 def allowed_image(filename):
     """Check if the file is an allowed image type"""
@@ -458,9 +492,8 @@ def analyze_images_with_evaluator(image_dir, patch_size=512, overlap=160, rotati
     # Get detections
     detections = evaluator.detections
     detections.dropna(inplace=True)
-    # Map to Spanish names
-    classes_dict_spanish = {k: translate_to_spanish(v) for k, v in classes_dict.items()}
-    detections['species'] = detections['labels'].map(classes_dict_spanish)
+    # Map species names (keep in English during processing)
+    detections['species'] = detections['labels'].map(classes_dict)
     
     # Save detections CSV
     csv_path = os.path.join(results_dir, 'detections.csv')
@@ -732,6 +765,9 @@ def analyze_yolo_endpoint():
             print(f"  Species found: {list(results['summary']['species_counts'].keys())}")
             print(f"{'='*60}\n")
             
+            # Translate response to Spanish before returning
+            response = translate_results_to_spanish(response)
+            
             return jsonify(response), 200
             
     except Exception as e:
@@ -911,6 +947,9 @@ def analyze_image_endpoint():
             print(f"  Species found: {list(results['species_counts'].keys())}")
             print(f"{'='*60}\n")
             
+            # Translate response to Spanish before returning
+            response = translate_results_to_spanish(response)
+            
             return jsonify(response), 200
             
     except Exception as e:
@@ -1031,9 +1070,8 @@ def analyze_single_image_yolo_endpoint():
                 conf = float(box.conf[0].item())
                 xyxy = box.xyxy[0].tolist()
                 
-                # Get class name in English and translate to Spanish
-                class_name_en = result.names[cls_id]
-                class_name = translate_to_spanish(class_name_en)
+                # Get class name (keep in English during processing)
+                class_name = result.names[cls_id]
                 
                 # Count species
                 species_counts[class_name] = species_counts.get(class_name, 0) + 1
@@ -1140,6 +1178,9 @@ def analyze_single_image_yolo_endpoint():
             print(f"\n✅ Single image analysis complete! Task ID: {task_id}")
             print(f"   - Detections: {len(detections)}")
             print(f"   - Processing time: {processing_time:.2f}s\n")
+            
+            # Translate response to Spanish before returning
+            response_data = translate_results_to_spanish(response_data)
             
             return jsonify(response_data), 200
             
@@ -1281,9 +1322,8 @@ def analyze_single_image_herdnet_endpoint():
             
             for point, cls, score in zip(point_list, class_list, scores_list):
                 x, y = point
-                # Get species name in English and translate to Spanish
-                species_en = ANIMAL_CLASSES.get(cls, f"class_{cls}")
-                species = translate_to_spanish(species_en)
+                # Get species name (keep in English during processing)
+                species = ANIMAL_CLASSES.get(cls, f"class_{cls}")
                 
                 # Count species
                 species_counts[species] = species_counts.get(species, 0) + 1
@@ -1401,6 +1441,9 @@ def analyze_single_image_herdnet_endpoint():
             print(f"\n✅ Single image HerdNet analysis complete! Task ID: {task_id}")
             print(f"   - Detections: {len(detections)}")
             print(f"   - Processing time: {processing_time:.2f}s\n")
+            
+            # Translate response to Spanish before returning
+            response_data = translate_results_to_spanish(response_data)
             
             return jsonify(response_data), 200
             
