@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wildlife Detection System - Architecture Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .diagram-container {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { margin: 0; font-size: 2.5em; }
+        h2 { color: #333; margin-top: 0; }
+        .mermaid {
+            text-align: center;
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .download-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .download-btn:hover {
+            background: #45a049;
+        }
+        .download-all {
+            background: #2196F3;
+        }
+        .download-all:hover {
+            background: #0b7dda;
+        }
+        .instructions {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin-bottom: 30px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🦁 Wildlife Detection System</h1>
+        <p>Architecture & Deployment Diagrams</p>
+    </div>
+
+    <div class="instructions">
+        <h3>📥 How to Download Diagrams as PNG:</h3>
+        <ol>
+            <li><strong>Method 1:</strong> Click the "Download PNG" button below each diagram</li>
+            <li><strong>Method 2:</strong> Right-click on any diagram → "Save image as..."</li>
+            <li><strong>Method 3:</strong> Take a screenshot of the specific diagram you need</li>
+            <li><strong>Method 4:</strong> Click "Download All as ZIP" to get all diagrams at once</li>
+        </ol>
+        <p><strong>Tip:</strong> Open this file in Chrome or Firefox for best results!</p>
+    </div>
+
+    <!-- Diagram 1: High-Level Architecture -->
+    <div class="diagram-container">
+        <h2>1. High-Level Architecture</h2>
+        <div class="mermaid" id="diagram1">
+graph TB
+    subgraph "User Interface"
+        User[👤 End User<br/>Web Browser]
+    end
+    
+    subgraph "Streamlit Cloud ☁️"
+        Frontend[🌐 Streamlit Frontend<br/>streamlit_app.py<br/>Port: 8501]
+    end
+    
+    subgraph "AWS EC2 Instance 🖥️"
+        Backend[🔧 Flask Backend API<br/>app.py<br/>Port: 8000]
+        Database[(💾 SQLite DB<br/>wildlife_detection.db)]
+        Models[🤖 ML Models<br/>- YOLOv11 best.pt<br/>- HerdNet herdnet_model.pth]
+    end
+    
+    subgraph "Google Drive ☁️"
+        GDrive[(📦 Model Storage<br/>Folder ID: 11uMn45...)]
+    end
+    
+    User -->|HTTPS| Frontend
+    Frontend -->|REST API<br/>HTTP Requests| Backend
+    Backend -->|Read/Write| Database
+    Backend -->|Load Models| Models
+    Backend -.->|Download<br/>On First Run| GDrive
+    Backend -->|JSON Response| Frontend
+    Frontend -->|Display Results| User
+    
+    style Frontend fill:#e1f5ff
+    style Backend fill:#fff4e1
+    style Database fill:#f0f0f0
+    style Models fill:#e8f5e9
+    style GDrive fill:#fff3e0
+    style User fill:#f3e5f5
+        </div>
+        <button class="download-btn" onclick="downloadDiagram('diagram1', '1_architecture.png')">📥 Download PNG</button>
+    </div>
+
+    <!-- Diagram 2: Deployment Architecture -->
+    <div class="diagram-container">
+        <h2>2. Deployment Architecture</h2>
+        <div class="mermaid" id="diagram2">
+graph TB
+    subgraph "Internet 🌐"
+        Users[👥 Users]
+    end
+    
+    subgraph "Streamlit Cloud - Frontend"
+        StreamlitApp[Streamlit Web App<br/>- Python 3.11<br/>- requirements-streamlit.txt]
+        StreamlitConfig[Secrets<br/>API_BASE_URL]
+    end
+    
+    subgraph "AWS EC2 Instance - Backend"
+        LB[Load Balancer]
+        
+        subgraph "Docker"
+            Gunicorn[Gunicorn<br/>2 workers, 2 threads]
+            FlaskApp[Flask Application]
+            
+            subgraph "Storage"
+                DB[(SQLite DB)]
+                ModelsDir[Models]
+                Uploads[Uploads/]
+            end
+        end
+        
+        SecurityGroup[Security Group<br/>Port 8000, 22]
+    end
+    
+    subgraph "External"
+        GDrive[Google Drive]
+    end
+    
+    Users -->|HTTPS| StreamlitApp
+    StreamlitConfig -.-> StreamlitApp
+    StreamlitApp -->|HTTP| LB
+    LB --> Gunicorn
+    Gunicorn --> FlaskApp
+    FlaskApp --> DB
+    FlaskApp --> ModelsDir
+    FlaskApp --> Uploads
+    FlaskApp -.-> GDrive
+    SecurityGroup -.-> LB
+    
+    style StreamlitApp fill:#00d4ff
+    style FlaskApp fill:#ff9800
+    style Gunicorn fill:#4caf50
+    style DB fill:#9e9e9e
+    style SecurityGroup fill:#f44336
+    style GDrive fill:#ffc107
+        </div>
+        <button class="download-btn" onclick="downloadDiagram('diagram2', '2_deployment.png')">📥 Download PNG</button>
+    </div>
+
+    <!-- Diagram 3: Data Flow -->
+    <div class="diagram-container">
+        <h2>3. Data Flow Sequence</h2>
+        <div class="mermaid" id="diagram3">
+sequenceDiagram
+    participant User
+    participant Streamlit as Streamlit<br/>Frontend
+    participant API as Flask<br/>Backend
+    participant DB as SQLite<br/>Database
+    participant Models as ML<br/>Models
+    
+    Note over User,Models: Image Analysis
+    User->>Streamlit: Upload ZIP
+    User->>Streamlit: Select model
+    Streamlit->>API: POST /analyze
+    
+    API->>DB: Save task
+    API->>API: Extract images
+    API->>Models: Run inference
+    Models-->>API: Detections
+    
+    API->>API: Generate results
+    API->>DB: Save results
+    API-->>Streamlit: JSON + task_id
+    
+    Streamlit->>Streamlit: Visualize
+    Streamlit->>User: Display
+    
+    Note over User,Models: Retrieve Results
+    User->>Streamlit: Enter task_id
+    Streamlit->>API: GET /tasks/id
+    API->>DB: Query
+    DB-->>API: Data
+    API-->>Streamlit: Results
+    Streamlit->>User: Display
+        </div>
+        <button class="download-btn" onclick="downloadDiagram('diagram3', '3_dataflow.png')">📥 Download PNG</button>
+    </div>
+
+    <!-- Diagram 4: Component Interaction -->
+    <div class="diagram-container">
+        <h2>4. Component Interaction</h2>
+        <div class="mermaid" id="diagram4">
+graph LR
+    subgraph "Frontend"
+        UI1[New Analysis]
+        UI2[View Results]
+        UI3[Statistics]
+        UI4[About]
+    end
+    
+    subgraph "API"
+        EP1[POST<br/>/analyze-yolo]
+        EP2[POST<br/>/analyze-image]
+        EP3[GET<br/>/tasks]
+        EP4[GET<br/>/database/stats]
+    end
+    
+    subgraph "Services"
+        S1[YOLO<br/>Inference]
+        S2[HerdNet<br/>Inference]
+        S3[Database<br/>Service]
+    end
+    
+    subgraph "Storage"
+        DB1[(tasks)]
+        DB2[(results)]
+        Files[(Models)]
+    end
+    
+    UI1 --> EP1
+    UI1 --> EP2
+    UI2 --> EP3
+    UI3 --> EP4
+    
+    EP1 --> S1
+    EP2 --> S2
+    EP3 --> S3
+    EP4 --> S3
+    
+    S1 --> Files
+    S2 --> Files
+    S3 --> DB1
+    S3 --> DB2
+    
+    style UI1 fill:#e3f2fd
+    style UI2 fill:#e3f2fd
+    style UI3 fill:#e3f2fd
+    style UI4 fill:#e3f2fd
+    style S1 fill:#fff3e0
+    style S2 fill:#fff3e0
+    style S3 fill:#e8f5e9
+        </div>
+        <button class="download-btn" onclick="downloadDiagram('diagram4', '4_components.png')">📥 Download PNG</button>
+    </div>
+
+    <!-- Diagram 5: Deployment Flow -->
+    <div class="diagram-container">
+        <h2>5. Deployment Flow</h2>
+        <div class="mermaid" id="diagram5">
+graph TD
+    Start([Start])
+    
+    subgraph "Backend"
+        B1[Push to GitHub]
+        B2[SSH to EC2]
+        B3[Pull code]
+        B4[Build Docker]
+        B5[Run compose]
+        B6[✅ Ready]
+    end
+    
+    subgraph "Frontend"
+        F1[Push to GitHub]
+        F2[Streamlit Cloud]
+        F3[Configure]
+        F4[Set secrets]
+        F5[Deploy]
+        F6[✅ Ready]
+    end
+    
+    Start --> B1
+    Start --> F1
+    
+    B1 --> B2
+    B2 --> B3
+    B3 --> B4
+    B4 --> B5
+    B5 --> B6
+    
+    F1 --> F2
+    F2 --> F3
+    F3 --> F4
+    F4 --> F5
+    F5 --> F6
+    
+    B6 --> Done
+    F6 --> Done
+    Done([🎉 Complete])
+    
+    style B6 fill:#c8e6c9
+    style F6 fill:#b2dfdb
+    style Done fill:#81c784
+        </div>
+        <button class="download-btn" onclick="downloadDiagram('diagram5', '5_deployment_flow.png')">📥 Download PNG</button>
+    </div>
+
+    <div class="footer">
+        <p>🦁 <strong>Wildlife Detection System</strong> - Architecture Documentation</p>
+        <p>Generated with Mermaid.js</p>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                fontSize: '16px'
+            }
+        });
+
+        // Function to download diagram as PNG
+        function downloadDiagram(diagramId, filename) {
+            const svg = document.querySelector(`#${diagramId} svg`);
+            if (!svg) {
+                alert('Diagram not rendered yet. Please wait a moment and try again.');
+                return;
+            }
+
+            // Get SVG data
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            // Set canvas size based on SVG
+            const svgRect = svg.getBoundingClientRect();
+            canvas.width = svgRect.width * 2; // 2x for better quality
+            canvas.height = svgRect.height * 2;
+
+            img.onload = function() {
+                // White background
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw SVG
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Download
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            };
+
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        }
+
+        // Wait for diagrams to render
+        console.log('Wildlife Detection System - Architecture Diagrams loaded');
+        console.log('Click any "Download PNG" button to save diagrams');
+    </script>
+</body>
+</html>
+
