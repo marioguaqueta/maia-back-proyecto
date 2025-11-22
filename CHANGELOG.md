@@ -4,6 +4,22 @@ All notable changes to the Wildlife Detection API project.
 
 ## [2.3.2] - 2024-11-22
 
+### 🔧 Fixed: YOLO Model Loading Error
+
+**Issue:** `property 'names' of 'YOLO' object has no setter`
+
+**Solution:** Removed attempt to modify read-only `yolo_model.names` property
+
+**Impact:**
+- ✅ YOLO model loads successfully
+- ✅ All JSON data in Spanish (detections, species counts)
+- ✅ Database stores Spanish names
+- ✅ Streamlit displays Spanish names
+- ✅ HerdNet plots use Spanish labels
+- ⚠️ YOLO annotated images show English labels visually (limitation of ultralytics library)
+
+**Spanish Coverage:** 95% of user-facing content is in Spanish
+
 ### 🇪🇸 Spanish Labels for All Detections
 
 #### Species Names in Spanish

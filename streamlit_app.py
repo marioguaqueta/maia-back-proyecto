@@ -504,10 +504,7 @@ def display_results(result, model_choice, file_type='zip'):
                                 st.info("No hay detecciones para esta imagen")
                         
                         # Botones de acción
-                        col_btn1, col_btn2 = st.columns(2)
-                        with col_btn1:
-                            if st.button(f"🔍 Ver Tamaño Completo", key=f"view_yolo_{img_idx}", use_container_width=True):
-                                show_image_modal(img_data, img_data['image_name'], "yolo")
+                        col_btn2 = st.columns(1)
                         
                         with col_btn2:
                             st.download_button(
@@ -581,11 +578,8 @@ def display_results(result, model_choice, file_type='zip'):
                                 st.info("No hay detecciones para esta imagen")
                         
                         # Botones de acción
-                        col_btn1, col_btn2 = st.columns(2)
-                        with col_btn1:
-                            if st.button(f"🔍 Ver Tamaño Completo", key=f"view_plot_{plot_idx}", use_container_width=True):
-                                show_image_modal(plot_data, plot_data['image_name'], "herdnet")
-                        
+                        col_btn2 = st.columns(1)
+        
                         with col_btn2:
                             st.download_button(
                                 label="⬇️ Descargar Gráfico",

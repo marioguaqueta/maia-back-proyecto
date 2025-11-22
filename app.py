@@ -136,13 +136,8 @@ try:
     # Get class names from the model
     YOLO_CLASSES = yolo_model.names  # Dictionary of class ID to class name
     
-    # Translate YOLO class names to Spanish for display in annotated images
-    YOLO_CLASSES_SPANISH = {k: translate_to_spanish(v) for k, v in YOLO_CLASSES.items()}
-    yolo_model.names = YOLO_CLASSES_SPANISH  # Update model names for plot() to use Spanish
-    
     print(f"✓ YOLOv11 model loaded successfully")
     print(f"  Model classes: {YOLO_CLASSES}")
-    print(f"  Spanish labels: {YOLO_CLASSES_SPANISH}")
     print(f"  Number of classes: {len(YOLO_CLASSES)}")
     yolo_loaded = True
 except Exception as e:
