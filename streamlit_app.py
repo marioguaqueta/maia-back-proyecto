@@ -178,6 +178,119 @@ def new_analysis_page():
                 st.error(f"❌ Error: {str(e)}")
 
 
+def create_detections_table(result, model_choice):
+    """Create a table showing detections per image and species."""
+    detections = result.get('detections', [])
+    
+    if not detections:
+        return None
+    
+    # Get all species from the result
+    species_counts = result.get('summary', {}).get('species_counts', {})
+    all_species = sorted(species_counts.keys())
+    
+    # Create a dictionary to store counts per image
+    image_data = {}
+    
+    # Process detections based on model type
+    if "YOLO" in model_choice:
+        for det in detections:
+            img_name = det.get('image', 'Unknown')
+            species = det.get('class_name', 'Unknown')
+            
+            if img_name not in image_data:
+                image_data[img_name] = {sp: 0 for sp in all_species}
+                image_data[img_name]['Total'] = 0
+            
+            image_data[img_name][species] = image_data[img_name].get(species, 0) + 1
+            image_data[img_name]['Total'] += 1
+    else:  # HerdNet
+        for det in detections:
+            img_name = det.get('images', 'Unknown')
+            species = det.get('species', 'Unknown')
+            
+            if img_name not in image_data:
+                image_data[img_name] = {sp: 0 for sp in all_species}
+                image_data[img_name]['Total'] = 0
+            
+            image_data[img_name][species] = image_data[img_name].get(species, 0) + 1
+            image_data[img_name]['Total'] += 1
+    
+    # Convert to DataFrame
+    rows = []
+    for img_name, counts in image_data.items():
+        row = {'Image': img_name, 'Total': counts['Total']}
+        for species in all_species:
+            row[species.capitalize()] = counts.get(species, 0)
+        rows.append(row)
+    
+    df = pd.DataFrame(rows)
+    
+    # Reorder columns: Image, Total, then species
+    cols = ['Image', 'Total'] + [sp.capitalize() for sp in all_species]
+    df = df[cols]
+    
+    return df
+
+
+@st.dialog("Image Viewer with Zoom", width="large")
+def show_image_modal(img_data, img_name, model_type):
+    """Display image in a modal with zoom and pan capabilities."""
+    st.subheader(f"📷 {img_name}")
+    
+    # Decode image
+    if model_type == "yolo":
+        img_bytes = base64.b64decode(img_data['annotated_image_base64'])
+        detections_count = img_data.get('detections_count', 0)
+        st.info(f"🎯 {detections_count} detections")
+    else:  # herdnet plot
+        img_bytes = base64.b64decode(img_data['plot_base64'])
+        st.info(f"📍 HerdNet Detection Plot")
+    
+    img = Image.open(BytesIO(img_bytes))
+    
+    # Get image dimensions
+    width, height = img.size
+    st.caption(f"Original size: {width} × {height} pixels")
+    
+    # Zoom controls
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        zoom_level = st.slider(
+            "🔍 Zoom Level",
+            min_value=50,
+            max_value=200,
+            value=100,
+            step=10,
+            format="%d%%",
+            key=f"zoom_{img_name}"
+        )
+    
+    # Calculate new dimensions based on zoom
+    new_width = int(width * zoom_level / 100)
+    new_height = int(height * zoom_level / 100)
+    
+    if zoom_level != 100:
+        img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        st.image(img_resized, use_column_width=False)
+    else:
+        st.image(img, use_column_width=True)
+    
+    # Download button
+    st.markdown("---")
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    btn = st.download_button(
+        label="⬇️ Download Image",
+        data=buf.getvalue(),
+        file_name=f"{img_name}",
+        mime="image/png",
+        use_container_width=True
+    )
+
+
 def display_results(result, model_choice):
     """Display analysis results."""
     st.success("✅ Analysis Complete!")
@@ -208,24 +321,97 @@ def display_results(result, model_choice):
             fig = px.pie(species_df, names='Species', values='Count')
             st.plotly_chart(fig, use_container_width=True)
     
-    # Detections
-    if result.get('detections'):
-        st.subheader("🎯 Detections")
-        with st.expander(f"View {len(result['detections'])} detections"):
-            st.json(result['detections'][:10])  # Show first 10
-            if len(result['detections']) > 10:
-                st.info(f"Showing first 10 of {len(result['detections'])} detections")
+    # ========================================
+    # NEW: Detections Table by Image
+    # ========================================
+    st.subheader("📋 Detections by Image")
+    detections_df = create_detections_table(result, model_choice)
+    
+    if detections_df is not None:
+        st.dataframe(
+            detections_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Image": st.column_config.TextColumn("Image", width="medium"),
+                "Total": st.column_config.NumberColumn("Total", width="small"),
+            }
+        )
+        
+        # Download CSV button
+        csv = detections_df.to_csv(index=False)
+        st.download_button(
+            label="⬇️ Download Table as CSV",
+            data=csv,
+            file_name=f"detections_table_{result.get('task_id', 'results')}.csv",
+            mime="text/csv"
+        )
+    
+    # ========================================
+    # NEW: Image Gallery with View Buttons
+    # ========================================
     
     # Annotated images (YOLO)
     if 'annotated_images' in result:
-        st.subheader("🖼️ Annotated Images")
-        for img_data in result['annotated_images'][:5]:  # Show first 5
-            with st.expander(f"{img_data['image_name']} ({img_data['detections_count']} detections)"):
+        st.subheader("🖼️ Annotated Images Gallery")
+        
+        # Create a mapping of image names to data
+        image_map = {img['image_name']: img for img in result['annotated_images']}
+        
+        # Display in a grid
+        for idx, img_data in enumerate(result['annotated_images']):
+            col1, col2, col3 = st.columns([3, 1, 1])
+            
+            with col1:
+                st.write(f"**{img_data['image_name']}**")
+                st.caption(f"🎯 {img_data['detections_count']} detections | Size: {img_data.get('original_size', {}).get('width', '?')} × {img_data.get('original_size', {}).get('height', '?')} px")
+            
+            with col2:
+                if st.button(f"👁️ View", key=f"view_yolo_{idx}"):
+                    show_image_modal(img_data, img_data['image_name'], "yolo")
+            
+            with col3:
+                # Download button for this specific image
                 img_bytes = base64.b64decode(img_data['annotated_image_base64'])
-                img = Image.open(BytesIO(img_bytes))
-                st.image(img, use_container_width=True)
+                st.download_button(
+                    label="⬇️ Download",
+                    data=img_bytes,
+                    file_name=img_data['image_name'],
+                    mime="image/png",
+                    key=f"dl_yolo_{idx}"
+                )
+            
+            st.markdown("---")
     
-    # Thumbnails (HerdNet)
+    # Detection plots (HerdNet)
+    if 'plots' in result:
+        st.subheader("🗺️ Detection Plots Gallery")
+        
+        for idx, plot_data in enumerate(result['plots']):
+            col1, col2, col3 = st.columns([3, 1, 1])
+            
+            with col1:
+                st.write(f"**{plot_data['image_name']}**")
+                st.caption(f"📍 Detection plot with points")
+            
+            with col2:
+                if st.button(f"👁️ View", key=f"view_plot_{idx}"):
+                    show_image_modal(plot_data, plot_data['image_name'], "herdnet")
+            
+            with col3:
+                # Download button
+                img_bytes = base64.b64decode(plot_data['plot_base64'])
+                st.download_button(
+                    label="⬇️ Download",
+                    data=img_bytes,
+                    file_name=f"plot_{plot_data['image_name']}",
+                    mime="image/png",
+                    key=f"dl_plot_{idx}"
+                )
+            
+            st.markdown("---")
+    
+    # Thumbnails (HerdNet) - keep existing thumbnail view
     if 'thumbnails' in result:
         st.subheader("🔍 Animal Thumbnails")
         cols = st.columns(5)
