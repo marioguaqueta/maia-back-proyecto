@@ -432,4 +432,3 @@ graph TB
 
 Mermaid(diagram).to_png("diagrama.png")
 ```
-
