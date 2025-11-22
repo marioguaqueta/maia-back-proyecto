@@ -1,224 +1,318 @@
-# HerdNet Animal Detection API
+# African Wildlife Detection API
 
-A Flask-based REST API for detecting and analyzing African wildlife in aerial/satellite imagery using the HerdNet deep learning model.
+A Flask-based REST API for detecting and analyzing African wildlife in aerial/satellite imagery using **YOLOv11** and **HerdNet** deep learning models, with a modern Streamlit web interface.
 
-## Features
+## ✨ Features
 
-- 🦁 **Multi-species Detection**: Detects 6 species of African wildlife (buffalo, elephant, kob, topi, warthog, waterbuck)
+### Core Detection
+- 🦁 **Dual Model Support**: Choose between YOLOv11 (bounding boxes) or HerdNet (point detection)
+- 🎯 **YOLOv11 Detection**: Fast, accurate bounding box detection with annotated images
+- 📍 **HerdNet Detection**: Precise point-based detection optimized for aerial imagery
 - 🗺️ **Large Image Support**: Processes large satellite images (6000x4000+) using intelligent stitching
 - 📦 **Batch Processing**: Upload ZIP files with multiple images for batch analysis
-- 🖼️ **Automatic Thumbnails**: Generates thumbnails of each detected animal
-- 📊 **Detection Plots**: Creates annotated images showing detection locations
-- 🔄 **Image Rotation**: Supports 90-degree rotation for different image orientations
-- ⚙️ **Configurable Parameters**: Adjust patch size, overlap, and other inference parameters
 
-## Quick Start
+### Data Management
+- 💾 **Database Storage**: SQLite database stores all analysis tasks and complete results
+- 🔍 **Task Tracking**: Each analysis gets a unique task_id for easy retrieval
+- 📈 **Statistics**: View comprehensive statistics about all analyses
+
+### User Interfaces
+- 🌐 **Streamlit Web UI**: Beautiful, easy-to-use web interface
+- 🔌 **REST API**: Full-featured REST API for programmatic access
+- 📱 **Responsive Design**: Works on desktop, tablet, and mobile
+
+### Deployment
+- ☁️ **Cloud-Ready**: Models download automatically from Google Drive
+- 🚀 **Easy Setup**: No large files in repository
+- 📦 **Streamlit Cloud Compatible**: Ready for cloud deployment
+
+## 🚀 Quick Start
 
 ### 1. Installation
 
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd back
+
 # Install dependencies
 pip install -r requirements.txt
 
 # Install HerdNet
 pip install git+https://github.com/Alexandre-Delplanque/HerdNet.git
-
-# Place your model file
-# Copy herdnet_model.pth to the project root directory
 ```
 
-### 2. Run the Server
+**Note:** Model files (`best.pt` and `herdnet_model.pth`) will be **automatically downloaded from Google Drive** on first run!
 
+### 2. Start the System
+
+**Option A: Using the startup script (Recommended)**
+
+```bash
+# On Linux/Mac
+./start.sh
+
+# On Windows
+start.bat
+```
+
+**Option B: Manual start (two terminals)**
+
+Terminal 1 - Backend:
 ```bash
 python app.py
 ```
 
-The server will start on `http://localhost:5000`
-
-### 3. Test the API
-
+Terminal 2 - Frontend:
 ```bash
-# Test with default parameters
-python test_api.py test_images.zip
-
-# Test with custom parameters
-python test_api.py test_images.zip --rotation 1 --patch-size 1024 --overlap 200
+streamlit run streamlit_app.py
 ```
 
-## API Endpoints
+### 3. Access the Application
+
+- **🌐 Web Interface:** http://localhost:8501 (Streamlit UI)
+- **🔌 API Endpoint:** http://localhost:8000 (Flask API)
+
+## 🎯 Which Model Should I Use?
+
+### Use YOLOv11 if you want:
+- ✅ Fast processing (1-2 seconds per image)
+- ✅ Bounding boxes around animals
+- ✅ Standard image sizes
+- ✅ Real-time detection capabilities
+- ✅ Simple, straightforward output
+
+### Use HerdNet if you want:
+- ✅ Very large satellite images (6000x4000+)
+- ✅ Precise center-point locations
+- ✅ Individual animal thumbnails
+- ✅ Scientific-grade accuracy
+- ✅ Optimized aerial imagery processing
+
+**💡 Tip:** Try both models and compare results!
+
+## 🌐 Using the Streamlit Interface
+
+The Streamlit web interface provides an easy way to use the system:
+
+### 📁 New Analysis Page
+1. Upload a ZIP file with wildlife images
+2. Select YOLOv11 or HerdNet model
+3. Configure parameters (confidence, patch size, etc.)
+4. Click "Run Analysis"
+5. View results with charts and annotated images
+6. Save the task_id to retrieve results later
+
+### 📊 View Results Page
+- Browse all past analyses
+- Filter by model type and status
+- View full JSON results
+- See processing statistics
+
+### 📈 Statistics Page
+- View aggregate statistics
+- Species distribution charts
+- Analysis trends over time
+- Model usage comparison
+
+### ℹ️ About Page
+- Model information and comparisons
+- Supported species
+- Citation information
+
+## 🔌 API Endpoints
 
 ### Health Check
 
 **GET** `/health`
 
-Check if the API is running and model is loaded.
+Check if the API is running and models are loaded.
 
-**Response:**
 ```json
 {
   "status": "healthy",
-  "model_loaded": true,
-  "device": "cuda",
-  "num_classes": 7,
-  "classes": {
-    "0": "no_animal",
-    "1": "buffalo",
-    "2": "elephant",
-    "3": "kob",
-    "4": "topi",
-    "5": "warthog",
-    "6": "waterbuck"
+  "models": {
+    "herdnet": {"loaded": true, "num_classes": 7},
+    "yolov11": {"loaded": true, "num_classes": 6}
   }
 }
 ```
 
-### Analyze Images
+### Analyze with YOLO
+
+**POST** `/analyze-yolo`
+
+Upload a ZIP file for YOLOv11 analysis.
+
+**Parameters:**
+- `file`: ZIP file with images (required)
+- `conf_threshold`: Confidence threshold (default: 0.25)
+- `iou_threshold`: IOU threshold for NMS (default: 0.45)
+- `img_size`: Image size for inference (default: 640)
+- `include_annotated_images`: Include annotated images (default: true)
+
+**Response:**
+```json
+{
+  "success": true,
+  "task_id": "123e4567-e89b-12d3-a456-426614174000",
+  "model": "YOLOv11",
+  "summary": {
+    "total_images": 5,
+    "total_detections": 47,
+    "species_counts": {"buffalo": 15, "elephant": 12}
+  },
+  "detections": [...],
+  "annotated_images": [...],
+  "processing_time_seconds": 12.5
+}
+```
+
+### Analyze with HerdNet
 
 **POST** `/analyze-image`
 
-Upload a ZIP file containing images for animal detection analysis.
+Upload a ZIP file for HerdNet analysis.
 
-**Request Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `file` | File | Yes | - | ZIP file containing images |
-| `patch_size` | Integer | No | 512 | Size of patches for stitching |
-| `overlap` | Integer | No | 160 | Overlap between patches |
-| `rotation` | Integer | No | 0 | Number of 90° rotations (0-3) |
-| `thumbnail_size` | Integer | No | 256 | Size of generated thumbnails |
-| `include_thumbnails` | Boolean | No | true | Include thumbnail data in response |
-| `include_plots` | Boolean | No | false | Include plot data in response |
-
-**Example Request (cURL):**
-
-```bash
-curl -X POST http://localhost:5000/analyze-image \
-  -F "file=@test_images.zip" \
-  -F "patch_size=512" \
-  -F "overlap=160" \
-  -F "rotation=0" \
-  -F "thumbnail_size=256" \
-  -F "include_thumbnails=true" \
-  -F "include_plots=true"
-```
-
-**Example Request (Python):**
-
-```python
-import requests
-
-with open('test_images.zip', 'rb') as f:
-    files = {'file': f}
-    data = {
-        'patch_size': 512,
-        'overlap': 160,
-        'rotation': 0,
-        'thumbnail_size': 256,
-        'include_thumbnails': 'true',
-        'include_plots': 'false'
-    }
-    response = requests.post(
-        'http://localhost:5000/analyze-image',
-        files=files,
-        data=data
-    )
-    result = response.json()
-```
+**Parameters:**
+- `file`: ZIP file with images (required)
+- `patch_size`: Patch size for stitching (default: 512)
+- `overlap`: Overlap for stitching (default: 160)
+- `rotation`: Number of 90-degree rotations (default: 0)
+- `thumbnail_size`: Size for thumbnails (default: 256)
+- `include_thumbnails`: Include thumbnails (default: true)
+- `include_plots`: Include detection plots (default: false)
 
 **Response:**
+```json
+{
+  "success": true,
+  "task_id": "456e7890-e89b-12d3-a456-426614174111",
+  "model": "HerdNet",
+  "summary": {
+    "total_images": 5,
+    "total_detections": 82,
+    "species_counts": {"buffalo": 25, "elephant": 18}
+  },
+  "detections": [...],
+  "thumbnails": [...],
+  "processing_time_seconds": 45.8
+}
+```
+
+### Get Tasks
+
+**GET** `/tasks`
+
+List all analysis tasks with optional filtering.
+
+**Query Parameters:**
+- `model_type`: Filter by 'yolo' or 'herdnet'
+- `status`: Filter by 'completed', 'processing', or 'failed'
+- `limit`: Maximum tasks to return (default: 100)
+- `offset`: Pagination offset (default: 0)
+
+### Get Task by ID
+
+**GET** `/tasks/<task_id>`
+
+Retrieve a specific task and its complete results.
+
+**Response includes:**
+- Task metadata (status, timestamps, parameters)
+- Complete JSON response with all detections
+- All base64-encoded images (if included in original request)
+
+### Database Statistics
+
+**GET** `/database/stats`
+
+Get comprehensive database statistics.
 
 ```json
 {
   "success": true,
-  "message": "Images analyzed successfully",
-  "summary": {
-    "total_images": 5,
-    "images_with_detections": 3,
-    "images_without_detections": 2,
-    "total_detections": 47,
-    "species_counts": {
-      "buffalo": 15,
-      "elephant": 12,
-      "waterbuck": 20
-    }
-  },
-  "detections": [
-    {
-      "images": "image1.jpg",
-      "x": 1234,
-      "y": 5678,
-      "labels": 1,
-      "species": "buffalo",
-      "scores": 0.95
-    }
-  ],
-  "thumbnails": [
-    {
-      "image_name": "image1.jpg",
-      "detection_id": 0,
-      "species": "buffalo",
-      "confidence": 0.95,
-      "position": {"x": 1234, "y": 5678},
-      "thumbnail_base64": "base64_encoded_image_data..."
-    }
-  ],
-  "plots": [
-    {
-      "image_name": "image1.jpg",
-      "plot_base64": "base64_encoded_plot_data..."
-    }
-  ],
-  "processing_params": {
-    "patch_size": 512,
-    "overlap": 160,
-    "rotation": 0,
-    "thumbnail_size": 256
+  "statistics": {
+    "total_tasks": 150,
+    "tasks_by_model": {"yolo": 85, "herdnet": 65},
+    "total_detections": 8547,
+    "species_distribution": {"buffalo": 2341, "elephant": 1876}
   }
 }
 ```
 
-## Parameter Guide
+## 💾 Database Features
 
-### Patch Size
+### What Gets Stored
 
-Controls the size of image patches used for inference. Larger patches may capture more context but require more memory.
+Every analysis automatically stores:
 
-- **Small images (< 2000px)**: Not used, image processed as whole
-- **Medium images (2000-4000px)**: 512-1024 recommended
-- **Large images (> 4000px)**: 512-768 recommended
+**For YOLO:**
+- ✅ All detection data (coordinates, confidence, species)
+- ✅ Complete bounding box information
+- ✅ **All annotated images as base64** (if requested)
+- ✅ Summary statistics and processing parameters
 
-### Overlap
+**For HerdNet:**
+- ✅ All detection data (center points, confidence, species)
+- ✅ **All animal thumbnails as base64** (if requested)
+- ✅ **All detection plots as base64** (if requested)
+- ✅ Summary statistics and processing parameters
 
-Overlap between patches in pixels. Higher overlap improves detection at patch boundaries but increases processing time.
+### Workflow Example
 
-- **Minimum**: 128px
-- **Recommended**: 160-200px
-- **High accuracy**: 256px
+```python
+import requests
 
-### Rotation
+# 1. Run analysis
+response = requests.post('http://localhost:8000/analyze-yolo', 
+    files={'file': open('images.zip', 'rb')})
+task_id = response.json()['task_id']
 
-Number of 90-degree rotations to apply to images before processing. Useful for images captured at different orientations.
+# 2. Retrieve complete results later (even after server restart)
+task_response = requests.get(f'http://localhost:8000/tasks/{task_id}')
+task = task_response.json()['task']
 
-- `0`: No rotation (0°)
-- `1`: 90° clockwise
-- `2`: 180°
-- `3`: 270° clockwise (90° counter-clockwise)
+# Access the complete original JSON response
+original_response = task['result_data']
+base64_images = original_response.get('annotated_images', [])
 
-### Thumbnail Size
+# 3. Get only detections
+detections = requests.get(f'http://localhost:8000/tasks/{task_id}/detections')
 
-Size of the thumbnail crop around each detection in pixels.
+# 4. View statistics
+stats = requests.get('http://localhost:8000/database/stats')
+```
 
-- **Small**: 128px
-- **Medium**: 256px (default)
-- **Large**: 512px
+## ☁️ Google Drive Model Loading
 
-## Model Information
+Models are automatically downloaded from Google Drive on first run. This makes deployment to cloud platforms like Streamlit Cloud easy without committing large model files to the repository.
 
-This API uses the **HerdNet** model, a deep learning architecture specifically designed for detecting and counting animals in aerial imagery.
+**Features:**
+- ✅ Automatic download on first run
+- ✅ Cached locally for subsequent runs
+- ✅ No manual download required
+- ✅ Perfect for Streamlit Cloud deployment
+
+**Model Files:**
+- `best.pt` (YOLOv11) - ~300 MB
+- `herdnet_model.pth` (HerdNet) - ~250 MB
+
+## 📊 Model Information
+
+### YOLOv11
+- **Type:** Bounding box object detection
+- **Speed:** Fast (~1-2s per image)
+- **Best for:** Standard images, real-time detection
+- **Output:** Bounding boxes with confidence scores
+
+### HerdNet
+- **Type:** Point-based detection
+- **Speed:** Moderate (depends on image size)
+- **Best for:** Large aerial/satellite images
+- **Output:** Center points, thumbnails, plots
 
 ### Supported Species
-
 1. Buffalo (*Syncerus caffer*)
 2. Elephant (*Loxodonta africana*)
 3. Kob (*Kobus kob*)
@@ -226,98 +320,93 @@ This API uses the **HerdNet** model, a deep learning architecture specifically d
 5. Warthog (*Phacochoerus africanus*)
 6. Waterbuck (*Kobus ellipsiprymnus*)
 
-### Model Citation
-
-If you use this model in your research, please cite:
+## 🛠️ Project Structure
 
 ```
-Delplanque, A., Foucher, S., Lejeune, P., Linchant, J., & Théau, J. (2022).
-Multispecies detection and identification of African mammals in aerial imagery using convolutional neural networks.
-Remote Sensing in Ecology and Conservation, 8(2), 166-179.
+back/
+├── app.py                    # Main Flask API
+├── streamlit_app.py          # Streamlit web interface
+├── database.py               # SQLite database module
+├── model_loader.py           # Google Drive model downloader
+├── test_api.py              # API testing script
+├── test_yolo_api.py         # YOLO testing script
+├── start.sh                 # Unix startup script
+├── start.bat                # Windows startup script
+├── requirements.txt         # Python dependencies
+├── README.md               # This file
+├── best.pt                 # YOLOv11 model (auto-downloaded)
+├── herdnet_model.pth      # HerdNet model (auto-downloaded)
+└── wildlife_detection.db  # SQLite database (auto-created)
 ```
 
-## Requirements
+## 🚀 Deployment
+
+### Local Deployment
+Use the startup scripts (`start.sh` or `start.bat`) for easy local deployment.
+
+### Streamlit Cloud
+1. Push code to GitHub (models will auto-download)
+2. Deploy to Streamlit Cloud
+3. Set Python version to 3.8+
+4. Models download automatically on first run
+
+### Docker
+Docker deployment is supported. See `Dockerfile` for configuration.
+
+## 📝 Requirements
 
 - Python 3.8+
 - PyTorch 2.0+
 - CUDA (optional, for GPU acceleration)
-- 8GB+ RAM (16GB+ recommended for large images)
-- Model file: `herdnet_model.pth`
+- 8GB+ RAM (16GB+ recommended)
 
-## Project Structure
+## 🐛 Troubleshooting
 
-```
-back/
-├── app.py                    # Main Flask application
-├── test_api.py              # API testing script
-├── requirements.txt         # Python dependencies
-├── herdnet_model.pth       # Model weights (not in repo)
-├── README.md               # This file
-└── docs/
-    ├── API_DOCUMENTATION.md
-    └── PARAMETER_TUNING.md
-```
+### Models not downloading
+- Check internet connection
+- Verify Google Drive folder is accessible
+- Check disk space (need ~600MB free)
 
-## Performance Tips
-
-### For Large Images (> 4000px)
-
-- Use patch_size=512 or 768
-- Use overlap=160-200
-- Enable GPU if available
-- Process in batches of 10-20 images
-
-### For Small Images (< 2000px)
-
-- Images are processed whole (no patching)
-- Faster processing
-- No overlap needed
-
-### Memory Considerations
-
-- Larger patch sizes require more VRAM/RAM
-- More overlap increases processing time linearly
-- Thumbnails and plots increase response size significantly
-
-## Troubleshooting
-
-### Server won't start
-
-- Check if port 5000 is available
-- Ensure all dependencies are installed
-- Verify `herdnet_model.pth` is in the project root
-
-### Out of memory errors
-
-- Reduce `patch_size` (e.g., from 1024 to 512)
+### Out of memory
+- Reduce `patch_size` (HerdNet) or `img_size` (YOLO)
 - Process fewer images at once
-- Disable GPU and use CPU
-
-### Low detection accuracy
-
-- Try different rotation values
-- Increase overlap (e.g., 200 or 256)
-- Ensure images are high quality
+- Disable thumbnails/plots
 
 ### Slow processing
-
 - Enable GPU acceleration
-- Reduce overlap
-- Increase patch_size (if memory allows)
-- Set `include_plots=false` and `include_thumbnails=false`
+- Reduce overlap (HerdNet)
+- Set `include_annotated_images=false` (YOLO)
 
-## License
+## 📚 Citations
 
-This project uses the HerdNet model which is licensed under the MIT License.
+**HerdNet:**
+```
+Delplanque, A., Foucher, S., Lejeune, P., Linchant, J., & Théau, J. (2022).
+Multispecies detection and identification of African mammals in aerial imagery 
+using convolutional neural networks. Remote Sensing in Ecology and Conservation, 8(2), 166-179.
+```
 
-## Support
+**YOLOv11:**
+```
+Ultralytics YOLOv11 (2024)
+https://github.com/ultralytics/ultralytics
+```
+
+## 📄 License
+
+This project uses:
+- **HerdNet model**: MIT License
+- **YOLOv11**: AGPL-3.0 License (Ultralytics)
+
+## 🤝 Support
 
 For issues related to:
-- **API**: Open an issue in this repository
-- **HerdNet model**: Visit https://github.com/Alexandre-Delplanque/HerdNet
-- **Model training**: Contact alexandre.delplanque@uliege.be
+- **API/Streamlit**: Open an issue in this repository
+- **YOLOv11**: Visit https://github.com/ultralytics/ultralytics
+- **HerdNet**: Visit https://github.com/Alexandre-Delplanque/HerdNet
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- HerdNet model by Alexandre Delplanque (University of Liège)
-- Based on research published in Remote Sensing in Ecology and Conservation
+- **YOLOv11** by Ultralytics
+- **HerdNet** by Alexandre Delplanque (University of Liège)
+- Research published in Remote Sensing in Ecology and Conservation

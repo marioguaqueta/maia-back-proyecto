@@ -9,9 +9,15 @@ import pandas as pd
 import warnings
 import base64
 from datetime import datetime
+import time
 
 from flask import Flask, request, jsonify, send_file
 from werkzeug.utils import secure_filename
+
+# Import database and model loader
+from database import (init_database, generate_task_id, save_task, update_task_success,
+                     update_task_error, save_detections, get_task_by_id, get_all_tasks, get_database_stats)
+from model_loader import ensure_models
 
 # PyTorch and image processing imports
 import torch
@@ -41,9 +47,24 @@ ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'JPG', 'JPEG', 'gif', 'webp', 
 ALLOWED_ZIP_EXTENSIONS = {'zip'}
 
 # ========================================
+# Initialize Database and Download Models
+# ========================================
+print("\n" + "="*60)
+print("🚀 Starting Wildlife Detection API")
+print("="*60)
+
+# Initialize database
+init_database()
+
+# Ensure models are available (download from Google Drive if needed)
+model_status = ensure_models()
+
+# ========================================
 # Load PyTorch Model for Animal Detection
 # ========================================
+print("\n" + "="*60)
 print("Loading HerdNet PyTorch model...")
+print("="*60)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
@@ -567,8 +588,11 @@ def analyze_yolo_endpoint():
         - include_annotated_images: Include annotated images with bboxes (optional, default true)
     
     Returns:
-        JSON with detection results, statistics, and annotated images with bounding boxes
+        JSON with task_id, detection results, statistics, and annotated images with bounding boxes
     """
+    task_id = None
+    start_time = time.time()
+    
     try:
         if not yolo_loaded:
             return jsonify({
@@ -596,7 +620,11 @@ def analyze_yolo_endpoint():
         img_size = int(request.form.get('img_size', 640))
         include_annotated_images = request.form.get('include_annotated_images', 'true').lower() == 'true'
         
+        # Generate task ID
+        task_id = generate_task_id()
+        
         print(f"\n{'='*60}")
+        print(f"Task ID: {task_id}")
         print(f"Processing ZIP file with YOLOv11: {file.filename}")
         print(f"Parameters: conf={conf_threshold}, iou={iou_threshold}, img_size={img_size}")
         print(f"Include annotated images: {include_annotated_images}")
@@ -633,14 +661,29 @@ def analyze_yolo_endpoint():
                 include_annotated_images=include_annotated_images
             )
             
+            # Calculate processing time
+            processing_time = time.time() - start_time
+            
+            # Count images
+            num_images = len([f for f in os.listdir(images_dir) if allowed_image(f)])
+            
+            # Save task to database
+            save_task(task_id, 'yolo', file.filename, num_images, {
+                'conf_threshold': conf_threshold,
+                'iou_threshold': iou_threshold,
+                'img_size': img_size
+            })
+            
             response = {
                 'success': True,
+                'task_id': task_id,
                 'message': 'Images analyzed successfully with YOLOv11',
                 'model': 'YOLOv11',
                 'classes': YOLO_CLASSES,
                 'summary': results['summary'],
                 'detections': results['detections'],
-                'processing_params': results['processing_params']
+                'processing_params': results['processing_params'],
+                'processing_time_seconds': round(processing_time, 2)
             }
             
             # Add annotated images if requested
@@ -648,8 +691,22 @@ def analyze_yolo_endpoint():
                 response['annotated_images'] = results['annotated_images']
                 response['annotated_images_count'] = len(results['annotated_images'])
             
+            # Update task success and save detections
+            update_task_success(
+                task_id, processing_time,
+                results['summary']['total_detections'],
+                results['summary']['images_with_animals'],
+                results['summary']['species_counts'],
+                response
+            )
+            
+            if results['detections']:
+                save_detections(task_id, results['detections'], 'yolo')
+            
             print(f"\n{'='*60}")
             print(f"✓ YOLOv11 Analysis complete!")
+            print(f"  Task ID: {task_id}")
+            print(f"  Processing time: {processing_time:.2f}s")
             print(f"  Total detections: {results['summary']['total_detections']}")
             print(f"  Images with animals: {results['summary']['images_with_animals']}/{results['summary']['total_images']}")
             print(f"  Annotated images generated: {len(results.get('annotated_images', []))}")
@@ -662,8 +719,14 @@ def analyze_yolo_endpoint():
         print(f"Error processing request: {str(e)}")
         import traceback
         traceback.print_exc()
+        
+        # Update task with error if created
+        if task_id:
+            update_task_error(task_id, str(e))
+        
         return jsonify({
             'success': False,
+            'task_id': task_id,
             'error': 'Analysis failed',
             'message': str(e)
         }), 500
@@ -703,8 +766,11 @@ def analyze_image_endpoint():
         - include_plots: Whether to include plot data (optional, default false)
     
     Returns:
-        JSON with detection results, statistics, and optionally thumbnails/plots
+        JSON with task_id, detection results, statistics, and optionally thumbnails/plots
     """
+    task_id = None
+    start_time = time.time()
+    
     try:
         # Check if file is present
         if 'file' not in request.files:
@@ -727,7 +793,11 @@ def analyze_image_endpoint():
         include_thumbnails = request.form.get('include_thumbnails', 'true').lower() == 'true'
         include_plots = request.form.get('include_plots', 'false').lower() == 'true'
         
+        # Generate task ID
+        task_id = generate_task_id()
+        
         print(f"\n{'='*60}")
+        print(f"Task ID: {task_id}")
         print(f"Processing ZIP file: {file.filename}")
         print(f"Parameters: patch_size={patch_size}, overlap={overlap}, rotation={rotation}, thumbnail_size={thumbnail_size}")
         print(f"{'='*60}\n")
@@ -763,10 +833,26 @@ def analyze_image_endpoint():
                 thumbnail_size=thumbnail_size
             )
             
+            # Calculate processing time
+            processing_time = time.time() - start_time
+            
+            # Count images
+            num_images = len([f for f in os.listdir(images_dir) if allowed_image(f)])
+            
+            # Save task to database
+            save_task(task_id, 'herdnet', file.filename, num_images, {
+                'patch_size': patch_size,
+                'overlap': overlap,
+                'rotation': rotation,
+                'thumbnail_size': thumbnail_size
+            })
+            
             # Filter response based on parameters
             response = {
                 'success': True,
-                'message': 'Images analyzed successfully',
+                'task_id': task_id,
+                'message': 'Images analyzed successfully with HerdNet',
+                'model': 'HerdNet',
                 'summary': {
                     'total_images': results['total_images'],
                     'images_with_detections': results['images_with_detections'],
@@ -775,7 +861,8 @@ def analyze_image_endpoint():
                     'species_counts': results['species_counts']
                 },
                 'detections': results['detections'],
-                'processing_params': results['processing_params']
+                'processing_params': results['processing_params'],
+                'processing_time_seconds': round(processing_time, 2)
             }
             
             if include_thumbnails:
@@ -784,8 +871,22 @@ def analyze_image_endpoint():
             if include_plots:
                 response['plots'] = results['plots']
             
+            # Update task success and save detections
+            update_task_success(
+                task_id, processing_time,
+                results['total_detections'],
+                results['images_with_detections'],
+                results['species_counts'],
+                response
+            )
+            
+            if results['detections']:
+                save_detections(task_id, results['detections'], 'herdnet')
+            
             print(f"\n{'='*60}")
-            print(f"✓ Analysis complete!")
+            print(f"✓ HerdNet Analysis complete!")
+            print(f"  Task ID: {task_id}")
+            print(f"  Processing time: {processing_time:.2f}s")
             print(f"  Total detections: {results['total_detections']}")
             print(f"  Images with animals: {results['images_with_detections']}/{results['total_images']}")
             print(f"  Species found: {list(results['species_counts'].keys())}")
@@ -797,18 +898,72 @@ def analyze_image_endpoint():
         print(f"Error processing request: {str(e)}")
         import traceback
         traceback.print_exc()
+        
+        # Update task with error if created
+        if task_id:
+            update_task_error(task_id, str(e))
+        
         return jsonify({
             'success': False,
+            'task_id': task_id,
             'error': 'Analysis failed',
             'message': str(e)
         }), 500
 
 
+@app.route("/tasks", methods=["GET"])
+def get_tasks_endpoint():
+    """Get all tasks with optional filtering."""
+    try:
+        model_type = request.args.get('model_type')
+        status = request.args.get('status')
+        limit = int(request.args.get('limit', 100))
+        offset = int(request.args.get('offset', 0))
+        
+        tasks = get_all_tasks(model_type, status, limit, offset)
+        
+        return jsonify({
+            'success': True,
+            'count': len(tasks),
+            'tasks': tasks
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route("/tasks/<task_id>", methods=["GET"])
+def get_task_endpoint(task_id):
+    """Get specific task by ID."""
+    try:
+        task = get_task_by_id(task_id)
+        if not task:
+            return jsonify({'success': False, 'error': 'Task not found'}), 404
+        return jsonify({'success': True, 'task': task}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route("/database/stats", methods=["GET"])
+def get_stats_endpoint():
+    """Get database statistics."""
+    try:
+        stats = get_database_stats()
+        return jsonify({'success': True, 'statistics': stats}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("Starting Flask server...")
-    print(f"Model: HerdNet with {num_classes} classes")
-    print(f"Device: {device}")
-    print(f"Classes: {list(ANIMAL_CLASSES.values())}")
+    print("🚀 Starting Flask server...")
+    print("="*60)
+    print(f"\n📊 Model Status:")
+    print(f"  HerdNet:  ✓ Loaded ({num_classes} classes)")
+    print(f"  YOLOv11:  {'✓ Loaded' if yolo_loaded else '✗ Not loaded'}")
+    print(f"\n💻 Device: {device}")
+    print(f"🦁 Species: {list(classes_dict.values())}")
+    print("\n" + "="*60)
+    print("  Server: http://0.0.0.0:8000")
+    print("  Health: http://localhost:8000/health")
     print("="*60 + "\n")
     app.run(host="0.0.0.0", port=8000, debug=True)

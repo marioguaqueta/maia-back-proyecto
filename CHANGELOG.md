@@ -1,170 +1,237 @@
 # Changelog
 
-## [4.0.0] - Complete infer.py Integration - 2024-11-18
+All notable changes to the Wildlife Detection API project.
 
-### 🎯 Major Overhaul
-Complete refactor to integrate official HerdNet `infer.py` inference logic into the Flask API.
+## [2.0.0] - 2024-11-22
 
-### Added
-- ✅ **Official HerdNet Pipeline** - Uses `HerdNetEvaluator` and `HerdNetStitcher` (same as infer.py)
-- ✅ **LMDS Detection** - Proper Local Maxima Detection System for accurate animal localization
-- ✅ **Thumbnail Generation** - Automatic cropped images of each detection with species label and confidence
-- ✅ **Plot Generation** - Annotated full images with detection markers
-- ✅ **Base64 Encoding** - Images returned as base64 for easy web integration
-- ✅ **Rotation Support** - `rotation` parameter for 90° image rotations (0-3)
-- ✅ **Configurable Parameters** - All infer.py parameters exposed via API
-  - `patch_size` - Size of patches for stitching (default: 512)
-  - `overlap` - Overlap between patches (default: 160)
-  - `rotation` - Number of 90° rotations (default: 0)
-  - `thumbnail_size` - Size of thumbnails (default: 256)
-  - `include_thumbnails` - Include thumbnail data (default: true)
-  - `include_plots` - Include plot data (default: false)
-- ✅ **Comprehensive Documentation**
-  - `API_DOCUMENTATION.md` - Complete API reference
-  - `INTEGRATION_SUMMARY.md` - Technical integration details
-  - Updated `README.md` - Full project documentation
-  - Updated `QUICKSTART.md` - Quick start guide
-- ✅ **Enhanced Test Script** - test_api.py with full parameter support
+### 🎉 Major Features Re-implemented
 
-### Changed
-- 🔄 **Complete app.py Refactor** - Now uses exact infer.py logic
-- 🔄 **Model Loading** - Loads checkpoint metadata (classes, mean, std)
-- 🔄 **Dataset Preparation** - Uses CSVDataset with proper transforms
-- 🔄 **Evaluation** - HerdNetEvaluator with stitcher and LMDS
-- 🔄 **Response Format** - Includes summary, detections, thumbnails, and plots
-- 🔄 **Dependencies** - Added pandas, kept albumentations, removed scipy
+After git revert, three major features have been fully restored and improved:
 
-### Technical Details
+#### 1. ☁️ Google Drive Model Loading
+- **NEW**: `model_loader.py` module for automatic model downloads
+- Models download automatically from Google Drive on first run
+- No large files in Git repository
+- Perfect for Streamlit Cloud and other cloud deployments
+- Model files: `best.pt` (YOLOv11) and `herdnet_model.pth` (HerdNet)
+- Cache models locally after first download
 
-#### Model Initialization
-```python
-checkpoint = torch.load(MODEL_PATH, map_location=map_location)
-classes_dict = checkpoint['classes']
-img_mean = checkpoint['mean']
-img_std = checkpoint['std']
-model = HerdNet(num_classes=num_classes, pretrained=False)
-model = LossWrapper(model, [])
-model.load_state_dict(checkpoint['model_state_dict'])
+#### 2. 💾 Database Integration
+- **NEW**: `database.py` module with SQLite database
+- Automatic storage of all analysis requests
+- Complete JSON responses saved (including base64 images)
+- Unique `task_id` for each analysis
+- Three tables: `tasks`, `task_results`, `detections`
+- New API endpoints:
+  - `GET /tasks` - List all tasks with filtering
+  - `GET /tasks/<task_id>` - Retrieve specific task
+  - `GET /database/stats` - Get database statistics
+
+#### 3. 🌐 Streamlit Web Interface
+- **NEW**: `streamlit_app.py` - Complete web application
+- Four pages:
+  - 🎯 New Analysis - Upload and analyze images
+  - 📊 View Results - Browse past analyses
+  - 📈 Statistics - Database statistics and charts
+  - ℹ️ About - Model information
+- Beautiful visualizations with Plotly
+- Drag-and-drop file upload
+- Real-time progress updates
+- Interactive charts and tables
+
+### 📝 Files Added/Modified
+
+**New Files:**
+- `model_loader.py` - Google Drive integration
+- `database.py` - SQLite database module
+- `streamlit_app.py` - Web interface
+- `start.sh` - Unix startup script
+- `start.bat` - Windows startup script
+- `verify_setup.py` - Setup verification tool
+- `IMPLEMENTATION_SUMMARY.md` - Detailed implementation guide
+
+**Modified Files:**
+- `app.py` - Added database and model loader integration
+- `requirements.txt` - Added streamlit, plotly, gdown
+- `.gitignore` - Added database and model file exclusions
+- `README.md` - Comprehensive documentation update
+
+### ⚙️ Technical Changes
+
+**Backend (app.py):**
+- Import database and model_loader modules
+- Call `ensure_models()` on startup
+- Generate `task_id` for each analysis
+- Save task metadata and complete results to database
+- Error handling with database updates
+- New database API endpoints
+
+**Database Schema:**
+```sql
+tasks (
+    task_id, model_type, created_at, status,
+    filename, num_images, processing_time_seconds,
+    total_detections, images_with_detections,
+    species_counts, processing_params, error_message
+)
+
+task_results (
+    id, task_id, result_data (complete JSON), created_at
+)
+
+detections (
+    id, task_id, image_name, species, confidence,
+    x, y, bbox_x1, bbox_y1, bbox_x2, bbox_y2,
+    detection_data
+)
 ```
 
-#### Dataset & Transforms
-```python
-end_transforms = [Rotate90(k=rotation), DownSample(down_ratio=2)]
-albu_transforms = [A.Normalize(mean=img_mean, std=img_std)]
-dataset = CSVDataset(csv_file=df, root_dir=dir, 
-                     albu_transforms=albu_transforms,
-                     end_transforms=end_transforms)
+**API Changes:**
+- All analysis endpoints now return `task_id`
+- All analysis endpoints now return `processing_time_seconds`
+- Complete results stored in database for later retrieval
+- New filtering and statistics endpoints
+
+### 🚀 Deployment Improvements
+
+- **Cloud-Ready**: No large files in repository
+- **Automatic Setup**: Models download on first run
+- **Easy Start**: Startup scripts for quick launch
+- **Streamlit Compatible**: Ready for Streamlit Cloud deployment
+- **Database Persistence**: All data saved across restarts
+
+### 📊 Response Format Changes
+
+**YOLO Response:**
+```json
+{
+  "success": true,
+  "task_id": "123e4567-e89b-12d3-a456-426614174000",  // NEW
+  "model": "YOLOv11",
+  "summary": {...},
+  "detections": [...],
+  "annotated_images": [...],
+  "processing_params": {...},
+  "processing_time_seconds": 12.5  // NEW
+}
 ```
 
-#### Evaluation Pipeline
-```python
-stitcher = HerdNetStitcher(model, size=(512,512), overlap=160)
-evaluator = HerdNetEvaluator(model, dataloader, metrics,
-                             lmds_kwargs=dict(kernel_size=(3,3)),
-                             stitcher=stitcher)
-evaluator.evaluate()
-detections = evaluator.detections
+**HerdNet Response:**
+```json
+{
+  "success": true,
+  "task_id": "456e7890-e89b-12d3-a456-426614174111",  // NEW
+  "model": "HerdNet",  // NEW
+  "summary": {...},
+  "detections": [...],
+  "thumbnails": [...],
+  "processing_params": {...},
+  "processing_time_seconds": 45.8  // NEW
+}
 ```
 
-### Removed
-- ❌ Custom image patching logic
-- ❌ Manual stitching implementation
-- ❌ Custom local maxima detection (now uses official LMDS)
-- ❌ scipy dependency (no longer needed)
+### 🔄 Migration Guide
 
-### Performance
-- ⚡ Same processing time as infer.py CLI
-- ⚡ Identical detection accuracy
-- ⚡ GPU acceleration support
-- ⚡ Efficient batch processing
+If updating from version 1.x:
 
-### Migration Guide
-See `INTEGRATION_SUMMARY.md` for complete migration instructions from:
-- Previous API version
-- infer.py CLI script
-- Custom implementations
+1. **Install new dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### API Compatibility
-- ✅ Backward compatible with ZIP file uploads
-- ✅ New optional parameters (default values maintain previous behavior)
-- ✅ Enhanced response format (previous fields still included)
+2. **Database will be created automatically** on first run
+
+3. **Models will download automatically** on first run (requires ~600MB space and internet)
+
+4. **Update API calls** to handle new response format:
+   ```python
+   # Old
+   result = response.json()
+   detections = result['detections']
+   
+   # New - also get task_id for later retrieval
+   result = response.json()
+   task_id = result['task_id']
+   detections = result['detections']
+   ```
+
+5. **Access Streamlit UI** at http://localhost:8501
+
+### 🐛 Bug Fixes
+
+- Fixed merge conflicts in `.gitignore`
+- Improved error handling in analysis endpoints
+- Added proper cleanup on analysis failure
+
+### 📚 Documentation
+
+- Comprehensive README.md update
+- Added IMPLEMENTATION_SUMMARY.md
+- Added CHANGELOG.md (this file)
+- Improved inline code documentation
+- Added verification script
+
+### ⚡ Performance
+
+- Database queries optimized with proper indexing
+- Efficient JSON storage for complete responses
+- Cached model files after first download
+
+### 🔒 Security
+
+- No sensitive data in repository
+- Database file excluded from version control
+- Proper file upload validation
+
+### 🎯 Testing
+
+Added verification script (`verify_setup.py`) to check:
+- Dependencies installed correctly
+- All required files present
+- Database initialization works
+- Model loader configured correctly
+
+### 📝 Notes
+
+- First run will take 5-10 minutes to download models (~600MB)
+- Subsequent runs are instant (models cached)
+- Database grows with usage, monitor disk space
+- Streamlit UI requires ports 8000 and 8501 to be available
 
 ---
 
-## [3.0.0] - Batch Processing with ZIP Files
+## [1.0.0] - 2024-11-20
 
-### Added
-- ✅ **ZIP file upload support** - Process multiple images in a single request
-- ✅ **Batch processing** - Analyze all images in the ZIP file automatically
-- ✅ **Summary statistics** - Total images, successful analyses, animals detected
-- ✅ **Individual results** - Detailed analysis for each image
-- ✅ **Error handling per image** - Failed images don't stop batch processing
-- ✅ **Helper script** (`create_test_zip.py`) to create test ZIP files
-- ✅ **African wildlife classes** - Configured for buffalo, elephant, kob, topi, warthog, waterbuck
+### Initial Release
 
-### Changed
-- ✅ Endpoint now accepts `file` parameter (ZIP file) instead of `image`
-- ✅ Response format includes summary and results array
-- ✅ Updated test script to work with ZIP files
-- ✅ Updated all documentation for batch processing
-- ✅ Animal classes updated for African wildlife species
+- Flask REST API for wildlife detection
+- Support for YOLOv11 and HerdNet models
+- Batch image processing from ZIP files
+- Species detection for 6 African wildlife species
+- Annotated image generation
+- Basic API endpoints
 
-### Technical Improvements
-- Uses `tempfile` for secure temporary file handling
-- Automatic cleanup of extracted files
-- Recursive search for images in ZIP subdirectories
-- Graceful error handling for corrupted images
+---
 
-## [2.1.0] - HerdNet Integration
+## Future Plans
 
-### Added
-- ✅ Official HerdNet package integration from GitHub
-- ✅ Proper model loading using `animaloc.models.load_model()`
-- ✅ Installation script (`install_herdnet.sh`) for easy setup
-- ✅ HerdNet dependencies (albumentations, opencv-python, PyYAML, hydra-core)
-- ✅ Documentation about HerdNet architecture and paper citation
+### Version 2.1.0 (Planned)
+- [ ] User authentication and accounts
+- [ ] Export results to CSV/Excel
+- [ ] Advanced filtering in Streamlit
+- [ ] Email notifications for completed analyses
+- [ ] Batch result download
 
-### Changed
-- ✅ Updated model loading to use official HerdNet architecture
-- ✅ Removed custom SimpleCNN class (replaced with proper HerdNet)
-- ✅ Updated requirements.txt to install HerdNet from GitHub
-- ✅ Enhanced README with HerdNet model information
-- ✅ Updated QUICKSTART with HerdNet installation instructions
+### Version 2.2.0 (Planned)
+- [ ] Multi-user workspace support
+- [ ] Advanced analytics dashboard
+- [ ] Model comparison tools
+- [ ] GIS format export
+- [ ] API rate limiting
 
-## [2.0.0] - Code Cleanup
-
-### Removed
-- ❌ All AWS S3 integration code
-- ❌ boto3 dependency and related imports
-- ❌ AWS credentials and environment variable requirements
-- ❌ `/upload-file` endpoint
-- ❌ S3 bucket configuration
-- ❌ File upload functionality to S3
-- ❌ UUID and datetime dependencies (no longer needed)
-- ❌ werkzeug.utils imports (no longer needed)
-
-### Changed
-- ✅ `/analyze-image` endpoint now only analyzes images (no upload)
-- ✅ Simplified response format (removed S3 URL, bucket, s3_key fields)
-- ✅ Cleaner imports and dependencies
-- ✅ Updated requirements.txt to include only necessary packages
-- ✅ Updated all documentation (README.md, QUICKSTART.md)
-- ✅ Updated test script to match new response format
-
-### Kept
-- ✅ PyTorch model loading and inference
-- ✅ Animal detection functionality
-- ✅ Image validation and preprocessing
-- ✅ Multiple animal class support
-- ✅ Confidence scores
-- ✅ `/health` endpoint
-- ✅ Error handling
-
-## [1.0.0] - Initial Version
-
-### Features
-- Animal detection using HerdNet PyTorch model
-- S3 integration for image storage
-- Multiple animal class detection
-- Confidence scores for predictions
-
+### Version 3.0.0 (Future)
+- [ ] Model fine-tuning interface
+- [ ] Real-time video analysis
+- [ ] Custom species training
+- [ ] Advanced visualization tools
+- [ ] Mobile app integration

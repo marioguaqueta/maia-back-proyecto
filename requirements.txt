@@ -72,3 +72,8 @@ ultralytics-thop==2.0.18
 urllib3==2.5.0
 wandb==0.23.0
 Werkzeug==3.0.1
+
+# Additional dependencies for Streamlit and GDrive
+streamlit==1.28.0
+plotly==5.18.0
+gdown==5.1.0
