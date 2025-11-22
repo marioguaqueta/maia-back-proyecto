@@ -16,16 +16,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Copy requirements (use backend requirements for Docker)
+COPY requirements-backend.txt requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app files
-COPY app.py .
-COPY best.pt .
-COPY herdnet_model.pth .
+# Copy all Python files
+COPY *.py .
 
 # Create directories
 RUN mkdir -p /app/uploads /app/results
