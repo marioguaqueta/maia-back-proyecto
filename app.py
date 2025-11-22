@@ -1297,10 +1297,12 @@ def analyze_single_image_herdnet_endpoint():
             # Initialize stitcher
             stitcher = HerdNetStitcher(
                 model=model,
-                size=patch_size,
+                size=(patch_size, patch_size),
                 overlap=overlap,
                 down_ratio=2,
-                device=device
+                up=True,
+                reduction='mean',
+                device_name=device
             )
             
             # Apply rotation if specified
