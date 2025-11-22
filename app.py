@@ -1107,10 +1107,9 @@ def analyze_single_image_yolo_endpoint():
             # Update task in database with success
             update_task_success(
                 task_id=task_id,
-                processing_time_seconds=processing_time,
+                processing_time=processing_time,
                 total_detections=len(detections),
                 images_with_detections=1 if len(detections) > 0 else 0,
-                images_without_detections=0 if len(detections) > 0 else 1,
                 species_counts=species_counts,
                 result_data=response_data
             )
@@ -1168,7 +1167,7 @@ def analyze_single_image_herdnet_endpoint():
     
     try:
         # Check if HerdNet model is loaded
-        if herdnet_model is None:
+        if model is None:
             return jsonify({'error': 'HerdNet model not available'}), 503
         
         # Check if file is present
@@ -1236,7 +1235,7 @@ def analyze_single_image_herdnet_endpoint():
             
             # Initialize stitcher
             stitcher = HerdNetStitcher(
-                model=herdnet_model,
+                model=model,
                 size=patch_size,
                 overlap=overlap,
                 down_ratio=2,
@@ -1262,7 +1261,7 @@ def analyze_single_image_herdnet_endpoint():
             
             for point, cls, score in zip(point_list, class_list, scores_list):
                 x, y = point
-                species = CLASSES[cls] if cls < len(CLASSES) else f"class_{cls}"
+                species = ANIMAL_CLASSES.get(cls, f"class_{cls}")
                 
                 # Count species
                 species_counts[species] = species_counts.get(species, 0) + 1
@@ -1336,11 +1335,12 @@ def analyze_single_image_herdnet_endpoint():
                 plots = []
                 
                 # Create plot
+                class_labels = [ANIMAL_CLASSES.get(i, f"class_{i}") for i in range(len(ANIMAL_CLASSES))]
                 plot_img = draw_points(
                     image=image_np.copy(),
                     points=point_list,
                     classes=class_list,
-                    class_labels=CLASSES,
+                    class_labels=class_labels,
                     radius=10
                 )
                 
@@ -1365,10 +1365,9 @@ def analyze_single_image_herdnet_endpoint():
             # Update task in database with success
             update_task_success(
                 task_id=task_id,
-                processing_time_seconds=processing_time,
+                processing_time=processing_time,
                 total_detections=len(detections),
                 images_with_detections=1 if len(detections) > 0 else 0,
-                images_without_detections=0 if len(detections) > 0 else 1,
                 species_counts=species_counts,
                 result_data=response_data
             )
