@@ -30,6 +30,12 @@ gdown>=5.0.0
 requests>=2.31.0
 tqdm>=4.65.0
 PyYAML>=6.0
+wandb>=0.15.0
+python-dateutil>=2.8.0
+
+# Additional dependencies (for HerdNet and YOLO)
+omegaconf>=2.3.0
+hydra-core>=1.3.0
 
 # HerdNet from GitHub
 git+https://github.com/Alexandre-Delplanque/HerdNet.git
