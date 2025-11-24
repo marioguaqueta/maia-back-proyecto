@@ -36,29 +36,34 @@ jobs:
             --exclude 'venv/' \
             --exclude '*.zip' \
             --exclude '*.log' \
-            ./ $EC2_USER@$EC2_HOST:~/apps/animal-detection-api/
+            --exclude '*.db' \
+            --exclude 'wildlife_detection.db' \
+            ./ $EC2_USER@$EC2_HOST:/home/ubuntu/maia-back-proyecto/
           
           # Deploy on EC2
           ssh -i ~/.ssh/ec2-key.pem $EC2_USER@$EC2_HOST << 'ENDSSH'
-            cd ~/apps/animal-detection-api
-            
-            # Pull latest changes if using git
-            # git pull origin main
+            cd /home/ubuntu/maia-back-proyecto
             
             # Stop existing containers
             docker-compose down || true
             
+            # Remove old containers and images to free space
+            docker system prune -f
+            
             # Build and start containers
             docker-compose up -d --build
             
-            # Wait for health check
-            sleep 10
+            # Wait for service to start
+            echo "Waiting for service to start..."
+            sleep 15
             
             # Check container status
+            echo "Container status:"
             docker-compose ps
             
             # Show recent logs
-            docker-compose logs --tail=20
+            echo "Recent logs:"
+            docker-compose logs --tail=30
           ENDSSH
       
       - name: Verify Deployment
@@ -89,7 +94,9 @@ jobs:
         if: success()
         run: |
           echo "✅ Deployment successful!"
-          echo "API is now running on http://${{ secrets.EC2_HOST }}"
+          echo "API is now running on http://${{ secrets.EC2_HOST }}:8000"
+          echo "Health check: http://${{ secrets.EC2_HOST }}:8000/health"
+          echo "Deployed to: /home/ubuntu/maia-back-proyecto"
       
       - name: Notify Failure
         if: failure()
