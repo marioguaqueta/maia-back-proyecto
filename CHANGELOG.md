@@ -2,6 +2,58 @@
 
 All notable changes to the Wildlife Detection API project.
 
+## [2.4.1] - 2024-11-22
+
+### 🔧 Fixed: HerdNetStitcher Device Parameter Error
+
+**Issue:** `Stitcher.init() got an unexpected keyword argument 'device'`
+
+**Location:** Single image HerdNet endpoint (`analyze_single_image_herdnet_endpoint`)
+
+**Root Cause:**
+- Used `device=device` instead of `device_name=device`
+- Used `size=patch_size` (int) instead of `size=(patch_size, patch_size)` (tuple)
+- Missing `up` and `reduction` parameters
+
+**Solution:**
+```python
+# Before (incorrect)
+stitcher = HerdNetStitcher(
+    model=model,
+    size=patch_size,          # ❌ Should be tuple
+    overlap=overlap,
+    down_ratio=2,
+    device=device             # ❌ Wrong parameter name
+)
+
+# After (correct)
+stitcher = HerdNetStitcher(
+    model=model,
+    size=(patch_size, patch_size),   # ✅ Tuple
+    overlap=overlap,
+    down_ratio=2,
+    up=True,                          # ✅ Added
+    reduction='mean',                 # ✅ Added
+    device_name=device                # ✅ Correct parameter
+)
+```
+
+**Impact:**
+- ✅ Single image HerdNet endpoint now works correctly
+- ✅ Consistent with batch processing initialization
+- ✅ Plots generate successfully
+- ✅ All parameters aligned with HerdNetStitcher signature
+
+### 📝 Documentation
+
+- **CREATED**: `HERDNET_STITCHER_FIX.md` - Complete fix documentation
+  - Error details and root cause
+  - Before/after code comparison
+  - HerdNetStitcher signature reference
+  - Testing procedures
+
+---
+
 ## [2.4.0] - 2024-11-22
 
 ### 🔄 Refactor: Streamlit Recursive Image Rendering

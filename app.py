@@ -1290,9 +1290,38 @@ def analyze_single_image_herdnet_endpoint():
             # Process the image with HerdNet
             print(f"Processing image with HerdNet: {image_filename}")
             
-            # Load image
+            # Load image as PIL Image
             image = Image.open(image_path)
+            
+            # Convert to RGB if necessary
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+            
+            # Apply rotation if specified
+            if rotation > 0:
+                rot_degrees = rotation * 90
+                image = image.rotate(rot_degrees, expand=True)
+            
+            # Convert to numpy array
             image_np = np.array(image)
+            
+            # Apply preprocessing transforms (normalization)
+            albu_transform = A.Compose([
+                A.Normalize(mean=img_mean, std=img_std)
+            ])
+            
+            # Apply normalization
+            transformed = albu_transform(image=image_np)
+            image_normalized = transformed['image']
+            
+            # Convert to torch tensor [H, W, C] -> [C, H, W]
+            image_tensor = torch.from_numpy(image_normalized).permute(2, 0, 1).float()
+            
+            # Add batch dimension [C, H, W] -> [1, C, H, W]
+            image_tensor = image_tensor.unsqueeze(0)
+            
+            # Move to device
+            image_tensor = image_tensor.to(device)
             
             # Initialize stitcher
             stitcher = HerdNetStitcher(
@@ -1305,13 +1334,9 @@ def analyze_single_image_herdnet_endpoint():
                 device_name=device
             )
             
-            # Apply rotation if specified
-            if rotation > 0:
-                rotator = Rotate90(k=rotation)
-                image_np = rotator(image=image_np)['image']
-            
-            # Run inference
-            output = stitcher(image_np)
+            # Run inference with torch tensor
+            print(f"Running inference with image shape: {image_tensor.shape}")
+            output = stitcher(image_tensor)
             
             # Get detections
             point_list = output['points']
@@ -1324,7 +1349,7 @@ def analyze_single_image_herdnet_endpoint():
             
             for point, cls, score in zip(point_list, class_list, scores_list):
                 x, y = point
-                # Get species name (keep in English during processing)
+                # Get species name
                 species = ANIMAL_CLASSES.get(cls, f"class_{cls}")
                 
                 # Count species
