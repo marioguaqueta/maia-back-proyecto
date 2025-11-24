@@ -13,6 +13,7 @@ import time
 
 from flask import Flask, request, jsonify, send_file
 from werkzeug.utils import secure_filename
+from flasgger import Swagger, swag_from
 
 # Import database and model loader
 from database import (init_database, generate_task_id, save_task, update_task_success,
@@ -41,6 +42,61 @@ warnings.filterwarnings('ignore')
 PIL.Image.MAX_IMAGE_PIXELS = None
 
 app = Flask(__name__)
+
+# Swagger configuration
+swagger_template = {
+    "swagger": "2.0",
+    "info": {
+        "title": "African Wildlife Detection API",
+        "description": "REST API for detecting and analyzing African wildlife in aerial/satellite imagery using YOLOv11 and HerdNet deep learning models",
+        "version": "2.1.0",
+        "contact": {
+            "name": "MAIA Project",
+            "url": "https://github.com/your-repo"
+        }
+    },
+    "basePath": "/",
+    "schemes": ["http", "https"],
+    "tags": [
+        {
+            "name": "Health",
+            "description": "API health and status endpoints"
+        },
+        {
+            "name": "YOLOv11",
+            "description": "YOLOv11 model endpoints for bounding box detection"
+        },
+        {
+            "name": "HerdNet",
+            "description": "HerdNet model endpoints for point-based detection"
+        },
+        {
+            "name": "Tasks",
+            "description": "Task management and retrieval endpoints"
+        },
+        {
+            "name": "Database",
+            "description": "Database statistics and information"
+        }
+    ]
+}
+
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": 'apispec',
+            "route": '/apispec.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/docs"
+}
+
+swagger = Swagger(app, template=swagger_template, config=swagger_config)
 
 # Allowed file extensions
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'JPG', 'JPEG', 'gif', 'webp', 'bmp'}
@@ -624,9 +680,90 @@ def analyze_images_with_evaluator(image_dir, patch_size=512, overlap=160, rotati
     }
 
 
+@app.route("/", methods=["GET"])
+def index():
+    """
+    API Root / Welcome
+    Welcome page with API information and documentation link
+    ---
+    tags:
+      - Health
+    responses:
+      200:
+        description: API information
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            version:
+              type: string
+            documentation:
+              type: string
+            endpoints:
+              type: object
+    """
+    return jsonify({
+        'message': 'African Wildlife Detection API',
+        'version': '2.1.0',
+        'documentation': '/docs',
+        'endpoints': {
+            'health': '/health',
+            'models_info': '/models/info',
+            'yolo_batch': '/analyze-yolo',
+            'yolo_single': '/analyze-single-image-yolo',
+            'herdnet_batch': '/analyze-image',
+            'herdnet_single': '/analyze-single-image-herdnet',
+            'tasks_list': '/tasks',
+            'task_by_id': '/tasks/<task_id>',
+            'database_stats': '/database/stats'
+        }
+    }), 200
+
+
 @app.route("/health", methods=["GET"])
 def health():
-    """Health check endpoint"""
+    """
+    Health Check Endpoint
+    Check if the API is running and models are loaded
+    ---
+    tags:
+      - Health
+    responses:
+      200:
+        description: API is healthy and models are loaded
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: healthy
+            models:
+              type: object
+              properties:
+                herdnet:
+                  type: object
+                  properties:
+                    loaded:
+                      type: boolean
+                    device:
+                      type: string
+                    num_classes:
+                      type: integer
+                    classes:
+                      type: object
+                yolov11:
+                  type: object
+                  properties:
+                    loaded:
+                      type: boolean
+                    device:
+                      type: string
+                    num_classes:
+                      type: integer
+                    classes:
+                      type: object
+    """
     return jsonify({
         'status': 'healthy',
         'models': {
@@ -648,17 +785,80 @@ def health():
 @app.route("/analyze-yolo", methods=["POST"])
 def analyze_yolo_endpoint():
     """
-    Analyze images from a ZIP file using YOLOv11 model
-    
-    Request:
-        - file: ZIP file containing images (multipart/form-data)
-        - conf_threshold: Confidence threshold for detections (optional, default 0.25)
-        - iou_threshold: IOU threshold for NMS (optional, default 0.45)
-        - img_size: Image size for inference (optional, default 640)
-        - include_annotated_images: Include annotated images with bboxes (optional, default true)
-    
-    Returns:
-        JSON with task_id, detection results, statistics, and annotated images with bounding boxes
+    Analyze Images with YOLOv11 (Batch Processing)
+    Upload a ZIP file containing multiple images for YOLOv11 bounding box detection
+    ---
+    tags:
+      - YOLOv11
+    consumes:
+      - multipart/form-data
+    parameters:
+      - name: file
+        in: formData
+        type: file
+        required: true
+        description: ZIP file containing wildlife images
+      - name: conf_threshold
+        in: formData
+        type: number
+        required: false
+        default: 0.25
+        description: Confidence threshold for detections (0.0-1.0)
+      - name: iou_threshold
+        in: formData
+        type: number
+        required: false
+        default: 0.45
+        description: IOU threshold for NMS (0.0-1.0)
+      - name: img_size
+        in: formData
+        type: integer
+        required: false
+        default: 640
+        description: Image size for inference (416, 640, 1280, etc.)
+      - name: include_annotated_images
+        in: formData
+        type: string
+        required: false
+        default: "true"
+        description: Include annotated images with bounding boxes
+    responses:
+      200:
+        description: Analysis completed successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            task_id:
+              type: string
+            model:
+              type: string
+            summary:
+              type: object
+              properties:
+                total_images:
+                  type: integer
+                images_with_animals:
+                  type: integer
+                total_detections:
+                  type: integer
+                species_counts:
+                  type: object
+            detections:
+              type: array
+              items:
+                type: object
+            annotated_images:
+              type: array
+              items:
+                type: object
+            processing_time_seconds:
+              type: number
+      400:
+        description: Bad request (no file provided or invalid file type)
+      500:
+        description: Analysis failed
     """
     task_id = None
     start_time = time.time()
@@ -806,7 +1006,44 @@ def analyze_yolo_endpoint():
 
 @app.route("/models/info", methods=["GET"])
 def models_info():
-    """Get information about available models"""
+    """
+    Get Models Information
+    Retrieve information about all available detection models
+    ---
+    tags:
+      - Health
+    responses:
+      200:
+        description: Models information retrieved successfully
+        schema:
+          type: object
+          properties:
+            models:
+              type: object
+              properties:
+                herdnet:
+                  type: object
+                  properties:
+                    loaded:
+                      type: boolean
+                    endpoint:
+                      type: string
+                    classes:
+                      type: object
+                    num_classes:
+                      type: integer
+                yolov11:
+                  type: object
+                  properties:
+                    loaded:
+                      type: boolean
+                    endpoint:
+                      type: string
+                    classes:
+                      type: object
+                    num_classes:
+                      type: integer
+    """
     return jsonify({
         'models': {
             'herdnet': {
@@ -827,19 +1064,96 @@ def models_info():
 @app.route("/analyze-image", methods=["POST"])
 def analyze_image_endpoint():
     """
-    Analyze images from a ZIP file using HerdNet model
-    
-    Request:
-        - file: ZIP file containing images (multipart/form-data)
-        - patch_size: Patch size for stitching (optional, default 512)
-        - overlap: Overlap for stitching (optional, default 160)
-        - rotation: Number of 90-degree rotations (optional, default 0)
-        - thumbnail_size: Size for thumbnails (optional, default 256)
-        - include_thumbnails: Whether to include thumbnail data (optional, default true)
-        - include_plots: Whether to include plot data (optional, default false)
-    
-    Returns:
-        JSON with task_id, detection results, statistics, and optionally thumbnails/plots
+    Analyze Images with HerdNet (Batch Processing)
+    Upload a ZIP file containing multiple images for HerdNet point-based detection
+    ---
+    tags:
+      - HerdNet
+    consumes:
+      - multipart/form-data
+    parameters:
+      - name: file
+        in: formData
+        type: file
+        required: true
+        description: ZIP file containing wildlife images
+      - name: patch_size
+        in: formData
+        type: integer
+        required: false
+        default: 512
+        description: Patch size for image stitching (384, 512, 768, 1024, 2048)
+      - name: overlap
+        in: formData
+        type: integer
+        required: false
+        default: 160
+        description: Overlap for stitching in pixels (0-300)
+      - name: rotation
+        in: formData
+        type: integer
+        required: false
+        default: 0
+        description: Number of 90-degree rotations (0, 1, 2, 3)
+      - name: thumbnail_size
+        in: formData
+        type: integer
+        required: false
+        default: 256
+        description: Size for animal thumbnails in pixels
+      - name: include_thumbnails
+        in: formData
+        type: string
+        required: false
+        default: "true"
+        description: Include thumbnail images of detected animals
+      - name: include_plots
+        in: formData
+        type: string
+        required: false
+        default: "false"
+        description: Include detection plots with marked points
+    responses:
+      200:
+        description: Analysis completed successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            task_id:
+              type: string
+            model:
+              type: string
+            summary:
+              type: object
+              properties:
+                total_images:
+                  type: integer
+                images_with_detections:
+                  type: integer
+                total_detections:
+                  type: integer
+                species_counts:
+                  type: object
+            detections:
+              type: array
+              items:
+                type: object
+            thumbnails:
+              type: array
+              items:
+                type: object
+            plots:
+              type: array
+              items:
+                type: object
+            processing_time_seconds:
+              type: number
+      400:
+        description: Bad request
+      500:
+        description: Analysis failed
     """
     task_id = None
     start_time = time.time()
@@ -990,17 +1304,46 @@ def analyze_image_endpoint():
 @app.route("/analyze-single-image-yolo", methods=["POST"])
 def analyze_single_image_yolo_endpoint():
     """
-    Analyze a single image using YOLOv11 model
-    
-    Request:
-        - file: Single image file (multipart/form-data)
-        - conf_threshold: Confidence threshold for detections (optional, default 0.25)
-        - iou_threshold: IOU threshold for NMS (optional, default 0.45)
-        - img_size: Image size for inference (optional, default 640)
-        - include_annotated_images: Include annotated images with bboxes (optional, default true)
-    
-    Returns:
-        JSON with task_id, detection results, and statistics
+    Analyze Single Image with YOLOv11
+    Upload a single image for YOLOv11 bounding box detection
+    ---
+    tags:
+      - YOLOv11
+    consumes:
+      - multipart/form-data
+    parameters:
+      - name: file
+        in: formData
+        type: file
+        required: true
+        description: Single wildlife image (PNG, JPG, JPEG, GIF, WebP, BMP, TIFF)
+      - name: conf_threshold
+        in: formData
+        type: number
+        required: false
+        default: 0.25
+      - name: iou_threshold
+        in: formData
+        type: number
+        required: false
+        default: 0.45
+      - name: img_size
+        in: formData
+        type: integer
+        required: false
+        default: 640
+      - name: include_annotated_images
+        in: formData
+        type: string
+        required: false
+        default: "true"
+    responses:
+      200:
+        description: Analysis completed successfully
+      400:
+        description: Bad request
+      500:
+        description: Analysis failed
     """
     task_id = None
     start_time = time.time()
@@ -1227,19 +1570,56 @@ def analyze_single_image_yolo_endpoint():
 @app.route("/analyze-single-image-herdnet", methods=["POST"])
 def analyze_single_image_herdnet_endpoint():
     """
-    Analyze a single image using HerdNet model
-    
-    Request:
-        - file: Single image file (multipart/form-data)
-        - patch_size: Patch size for stitching (optional, default 512)
-        - overlap: Overlap for stitching (optional, default 160)
-        - rotation: Number of 90-degree rotations (optional, default 0)
-        - thumbnail_size: Size for thumbnails (optional, default 256)
-        - include_thumbnails: Whether to include thumbnail data (optional, default true)
-        - include_plots: Whether to include plot data (optional, default false)
-    
-    Returns:
-        JSON with task_id, detection results, statistics, and optionally thumbnails/plots
+    Analyze Single Image with HerdNet
+    Upload a single image for HerdNet point-based detection (optimized for large aerial/satellite images)
+    ---
+    tags:
+      - HerdNet
+    consumes:
+      - multipart/form-data
+    parameters:
+      - name: file
+        in: formData
+        type: file
+        required: true
+        description: Single wildlife image (PNG, JPG, JPEG, GIF, WebP, BMP, TIFF)
+      - name: patch_size
+        in: formData
+        type: integer
+        required: false
+        default: 512
+      - name: overlap
+        in: formData
+        type: integer
+        required: false
+        default: 160
+      - name: rotation
+        in: formData
+        type: integer
+        required: false
+        default: 0
+      - name: thumbnail_size
+        in: formData
+        type: integer
+        required: false
+        default: 256
+      - name: include_thumbnails
+        in: formData
+        type: string
+        required: false
+        default: "true"
+      - name: include_plots
+        in: formData
+        type: string
+        required: false
+        default: "false"
+    responses:
+      200:
+        description: Analysis completed successfully
+      400:
+        description: Bad request
+      500:
+        description: Analysis failed
     """
     task_id = None
     start_time = time.time()
@@ -1546,7 +1926,65 @@ def analyze_single_image_herdnet_endpoint():
 
 @app.route("/tasks", methods=["GET"])
 def get_tasks_endpoint():
-    """Get all tasks with optional filtering."""
+    """
+    Get All Tasks
+    Retrieve a list of all analysis tasks with optional filtering
+    ---
+    tags:
+      - Tasks
+    parameters:
+      - name: model_type
+        in: query
+        type: string
+        required: false
+        description: Filter by model type (yolo or herdnet)
+      - name: status
+        in: query
+        type: string
+        required: false
+        description: Filter by status (completed, processing, or failed)
+      - name: limit
+        in: query
+        type: integer
+        required: false
+        default: 100
+        description: Maximum number of tasks to return
+      - name: offset
+        in: query
+        type: integer
+        required: false
+        default: 0
+        description: Pagination offset
+    responses:
+      200:
+        description: Tasks retrieved successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            tasks:
+              type: array
+              items:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                  model_type:
+                    type: string
+                  status:
+                    type: string
+                  filename:
+                    type: string
+                  num_images:
+                    type: integer
+                  total_detections:
+                    type: integer
+                  created_at:
+                    type: string
+      500:
+        description: Server error
+    """
     try:
         model_type = request.args.get('model_type')
         status = request.args.get('status')
@@ -1566,7 +2004,55 @@ def get_tasks_endpoint():
 
 @app.route("/tasks/<task_id>", methods=["GET"])
 def get_task_endpoint(task_id):
-    """Get specific task by ID."""
+    """
+    Get Task by ID
+    Retrieve a specific task and its complete results by task ID
+    ---
+    tags:
+      - Tasks
+    parameters:
+      - name: task_id
+        in: path
+        type: string
+        required: true
+        description: Unique task identifier (UUID)
+    responses:
+      200:
+        description: Task retrieved successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            task:
+              type: object
+              properties:
+                task_id:
+                  type: string
+                model_type:
+                  type: string
+                status:
+                  type: string
+                filename:
+                  type: string
+                num_images:
+                  type: integer
+                total_detections:
+                  type: integer
+                created_at:
+                  type: string
+                completed_at:
+                  type: string
+                processing_time_seconds:
+                  type: number
+                result_data:
+                  type: object
+                  description: Complete JSON response from the analysis
+      404:
+        description: Task not found
+      500:
+        description: Server error
+    """
     try:
         task = get_task_by_id(task_id)
         if not task:
@@ -1578,7 +2064,41 @@ def get_task_endpoint(task_id):
 
 @app.route("/database/stats", methods=["GET"])
 def get_stats_endpoint():
-    """Get database statistics."""
+    """
+    Get Database Statistics
+    Retrieve comprehensive statistics about all analyses in the database
+    ---
+    tags:
+      - Database
+    responses:
+      200:
+        description: Statistics retrieved successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            statistics:
+              type: object
+              properties:
+                total_tasks:
+                  type: integer
+                  description: Total number of analysis tasks
+                tasks_by_model:
+                  type: object
+                  description: Task counts grouped by model type
+                tasks_by_status:
+                  type: object
+                  description: Task counts grouped by status
+                total_detections:
+                  type: integer
+                  description: Total number of animal detections
+                species_distribution:
+                  type: object
+                  description: Detection counts grouped by species
+      500:
+        description: Server error
+    """
     try:
         stats = get_database_stats()
         return jsonify({'success': True, 'statistics': stats}), 200
