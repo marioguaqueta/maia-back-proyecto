@@ -1,64 +1,64 @@
-# African Wildlife Detection API
+# API de Detección de Fauna Africana
 
-A Flask-based REST API for detecting and analyzing African wildlife in aerial/satellite imagery using **YOLOv11** and **HerdNet** deep learning models, with a modern Streamlit web interface.
+Una API REST basada en Flask para detectar y analizar fauna africana en imágenes aéreas/satelitales utilizando los modelos de aprendizaje profundo **YOLOv11** y **HerdNet**, con una moderna interfaz web Streamlit.
 
-## ✨ Features
+## ✨ Características
 
-### Core Detection
-- 🦁 **Dual Model Support**: Choose between YOLOv11 (bounding boxes) or HerdNet (point detection)
-- 🎯 **YOLOv11 Detection**: Fast, accurate bounding box detection with annotated images
-- 📍 **HerdNet Detection**: Precise point-based detection optimized for aerial imagery
-- 🗺️ **Large Image Support**: Processes large satellite images (6000x4000+) using intelligent stitching
-- 📦 **Batch Processing**: Upload ZIP files with multiple images for batch analysis
-- 🖼️ **Single Image Analysis**: Upload individual images (PNG, JPG, GIF, WebP, BMP, TIFF) for quick testing
-- ⚡ **Flexible Input**: Choose between ZIP (batch) or single image based on your needs
+### Detección Principal
+- 🦁 **Soporte Dual de Modelos**: Elige entre YOLOv11 (cajas delimitadoras) o HerdNet (detección por puntos)
+- 🎯 **Detección YOLOv11**: Detección rápida y precisa de cajas delimitadoras con imágenes anotadas
+- 📍 **Detección HerdNet**: Detección precisa basada en puntos optimizada para imágenes aéreas
+- 🗺️ **Soporte para Imágenes Grandes**: Procesa imágenes satelitales grandes (6000x4000+) usando unión inteligente
+- 📦 **Procesamiento por Lotes**: Sube archivos ZIP con múltiples imágenes para análisis por lotes
+- 🖼️ **Análisis de Imagen Individual**: Sube imágenes individuales (PNG, JPG, GIF, WebP, BMP, TIFF) para pruebas rápidas
+- ⚡ **Entrada Flexible**: Elige entre ZIP (lotes) o imagen individual según tus necesidades
 
-### Data Management
-- 💾 **Database Storage**: SQLite database stores all analysis tasks and complete results
-- 🔍 **Task Tracking**: Each analysis gets a unique task_id for easy retrieval
-- 📈 **Statistics**: View comprehensive statistics about all analyses
+### Gestión de Datos
+- 💾 **Almacenamiento en Base de Datos**: Base de datos SQLite almacena todas las tareas de análisis y resultados completos
+- 🔍 **Seguimiento de Tareas**: Cada análisis obtiene un task_id único para fácil recuperación
+- 📈 **Estadísticas**: Ver estadísticas completas sobre todos los análisis
 
-### User Interfaces
-- 🌐 **Streamlit Web UI**: Beautiful, easy-to-use web interface
-- 🔌 **REST API**: Full-featured REST API for programmatic access
-- 📱 **Responsive Design**: Works on desktop, tablet, and mobile
+### Interfaces de Usuario
+- 🌐 **Interfaz Web Streamlit**: Interfaz web hermosa y fácil de usar
+- 🔌 **API REST**: API REST completa para acceso programático
+- 📱 **Diseño Responsivo**: Funciona en escritorio, tablet y móvil
 
-### Deployment
-- ☁️ **Cloud-Ready**: Models download automatically from Google Drive
-- 🚀 **Easy Setup**: No large files in repository
-- 📦 **Streamlit Cloud Compatible**: Ready for cloud deployment
+### Despliegue
+- ☁️ **Listo para la Nube**: Los modelos se descargan automáticamente desde Google Drive
+- 🚀 **Configuración Fácil**: Sin archivos grandes en el repositorio
+- 📦 **Compatible con Streamlit Cloud**: Listo para despliegue en la nube
 
-## 🚀 Quick Start
+## 🚀 Inicio Rápido
 
-### 1. Installation
+### 1. Instalación
 
 ```bash
-# Clone the repository
+# Clonar el repositorio
 git clone <repository-url>
 cd back
 
-# Install dependencies
+# Instalar dependencias
 pip install -r requirements.txt
 
-# Install HerdNet
+# Instalar HerdNet
 pip install git+https://github.com/Alexandre-Delplanque/HerdNet.git
 ```
 
-**Note:** Model files (`best.pt` and `herdnet_model.pth`) will be **automatically downloaded from Google Drive** on first run!
+**Nota:** Los archivos de modelos (`best.pt` y `herdnet_model.pth`) se **descargarán automáticamente desde Google Drive** en la primera ejecución!
 
-### 2. Start the System
+### 2. Iniciar el Sistema
 
-**Option A: Using the startup script (Recommended)**
+**Opción A: Usando el script de inicio (Recomendado)**
 
 ```bash
-# On Linux/Mac
+# En Linux/Mac
 ./start.sh
 
-# On Windows
+# En Windows
 start.bat
 ```
 
-**Option B: Manual start (two terminals)**
+**Opción B: Inicio manual (dos terminales)**
 
 Terminal 1 - Backend:
 ```bash
@@ -70,79 +70,79 @@ Terminal 2 - Frontend:
 streamlit run streamlit_app.py
 ```
 
-### 3. Access the Application
+### 3. Acceder a la Aplicación
 
-- **🌐 Web Interface:** http://localhost:8501 (Streamlit UI)
-- **🔌 API Endpoint:** http://localhost:8000 (Flask API)
+- **🌐 Interfaz Web:** http://localhost:8501 (Interfaz Streamlit)
+- **🔌 API Endpoint:** http://localhost:8000 (API Flask)
 
-## 🎯 Which Model Should I Use?
+## 🎯 ¿Qué Modelo Debo Usar?
 
-### Use YOLOv11 if you want:
-- ✅ Fast processing (1-2 seconds per image)
-- ✅ Bounding boxes around animals
-- ✅ Standard image sizes
-- ✅ Real-time detection capabilities
-- ✅ Simple, straightforward output
+### Usa YOLOv11 si quieres:
+- ✅ Procesamiento rápido (1-2 segundos por imagen)
+- ✅ Cajas delimitadoras alrededor de los animales
+- ✅ Tamaños de imagen estándar
+- ✅ Capacidades de detección en tiempo real
+- ✅ Salida simple y directa
 
-### Use HerdNet if you want:
-- ✅ Very large satellite images (6000x4000+)
-- ✅ Precise center-point locations
-- ✅ Individual animal thumbnails
-- ✅ Scientific-grade accuracy
-- ✅ Optimized aerial imagery processing
+### Usa HerdNet si quieres:
+- ✅ Imágenes satelitales muy grandes (6000x4000+)
+- ✅ Ubicaciones precisas del punto central
+- ✅ Miniaturas individuales de animales
+- ✅ Precisión de grado científico
+- ✅ Procesamiento optimizado de imágenes aéreas
 
-**💡 Tip:** Try both models and compare results!
+**💡 Consejo:** ¡Prueba ambos modelos y compara resultados!
 
-## 🌐 Using the Streamlit Interface
+## 🌐 Usando la Interfaz Streamlit
 
-The Streamlit web interface provides a beautiful, card-based UI for easy system access:
+La interfaz web Streamlit proporciona una hermosa interfaz basada en tarjetas para un fácil acceso al sistema:
 
-### 📁 New Analysis Page
-1. Upload a ZIP file with wildlife images
-2. Select YOLOv11 or HerdNet model
-3. Configure parameters (confidence, patch size, etc.)
-4. Click "Run Analysis"
-5. **View results in modern card layout:**
-   - 🖼️ **Image Cards**: Each image in its own styled card
-   - 🎯 **Detection Badges**: Color-coded counts and dimensions
-   - 📊 **Collapsible Tables**: Expandable detection details per image
-   - 🔍 **Interactive Viewer**: Full-size view with zoom & pan
-   - ⬇️ **Quick Download**: Direct download from each card
-6. Save the task_id to retrieve results later
+### 📁 Página de Nuevo Análisis
+1. Sube un archivo ZIP con imágenes de fauna
+2. Selecciona modelo YOLOv11 o HerdNet
+3. Configura parámetros (confianza, tamaño de parche, etc.)
+4. Haz clic en "Ejecutar Análisis"
+5. **Ver resultados en diseño moderno de tarjetas:**
+   - 🖼️ **Tarjetas de Imagen**: Cada imagen en su propia tarjeta estilizada
+   - 🎯 **Insignias de Detección**: Conteos codificados por color y dimensiones
+   - 📊 **Tablas Plegables**: Detalles de detección expandibles por imagen
+   - 🔍 **Visor Interactivo**: Vista de tamaño completo con zoom y paneo
+   - ⬇️ **Descarga Rápida**: Descarga directa desde cada tarjeta
+6. Guarda el task_id para recuperar resultados más tarde
 
-### 📊 View Results Page
-- Browse all past analyses
-- Filter by model type and status
-- View full JSON results in card format
-- See processing statistics
+### 📊 Página de Ver Resultados
+- Explorar todos los análisis pasados
+- Filtrar por tipo de modelo y estado
+- Ver resultados JSON completos en formato de tarjeta
+- Ver estadísticas de procesamiento
 
-### 📈 Statistics Page
-- View aggregate statistics
-- Species distribution charts
-- Analysis trends over time
-- Model usage comparison
+### 📈 Página de Estadísticas
+- Ver estadísticas agregadas
+- Gráficos de distribución de especies
+- Tendencias de análisis en el tiempo
+- Comparación de uso de modelos
 
-### ℹ️ About Page
-- Model information and comparisons
-- Supported species
-- Citation information
+### ℹ️ Página Acerca de
+- Información y comparaciones de modelos
+- Especies soportadas
+- Información de citación
 
-### 🎨 Card-Based UI Features
-- **2-Column Grid Layout**: Gallery-style image browsing
-- **Hover Effects**: Smooth animations and shadows
-- **Responsive Design**: Adapts to screen size
-- **Collapsible Details**: Keep UI clean, expand when needed
-- **Integrated Actions**: View and download directly from cards
+### 🎨 Características de la Interfaz de Tarjetas
+- **Diseño de Cuadrícula de 2 Columnas**: Navegación de imágenes estilo galería
+- **Efectos Hover**: Animaciones suaves y sombras
+- **Diseño Responsivo**: Se adapta al tamaño de pantalla
+- **Detalles Plegables**: Mantén la interfaz limpia, expande cuando sea necesario
+- **Acciones Integradas**: Ver y descargar directamente desde las tarjetas
 
-For more details, see [`CARD_UI_DESIGN.md`](CARD_UI_DESIGN.md)
+Para más detalles, ver [`CARD_UI_DESIGN.md`](CARD_UI_DESIGN.md)
 
-## 🔌 API Endpoints
+## 🔌 Endpoints de la API
 
-### Health Check
+### Verificación de Salud
 
 **GET** `/health`
 
-Check if the API is running and models are loaded.
+Verifica si la API está funcionando y los modelos están cargados.
 
 ```json
 {
@@ -154,20 +154,20 @@ Check if the API is running and models are loaded.
 }
 ```
 
-### Analyze with YOLO
+### Analizar con YOLO
 
 **POST** `/analyze-yolo`
 
-Upload a ZIP file for YOLOv11 analysis.
+Sube un archivo ZIP para análisis con YOLOv11.
 
-**Parameters:**
-- `file`: ZIP file with images (required)
-- `conf_threshold`: Confidence threshold (default: 0.25)
-- `iou_threshold`: IOU threshold for NMS (default: 0.45)
-- `img_size`: Image size for inference (default: 640)
-- `include_annotated_images`: Include annotated images (default: true)
+**Parámetros:**
+- `file`: Archivo ZIP con imágenes (requerido)
+- `conf_threshold`: Umbral de confianza (predeterminado: 0.25)
+- `iou_threshold`: Umbral IOU para NMS (predeterminado: 0.45)
+- `img_size`: Tamaño de imagen para inferencia (predeterminado: 640)
+- `include_annotated_images`: Incluir imágenes anotadas (predeterminado: true)
 
-**Response:**
+**Respuesta:**
 ```json
 {
   "success": true,
@@ -184,22 +184,22 @@ Upload a ZIP file for YOLOv11 analysis.
 }
 ```
 
-### Analyze with HerdNet
+### Analizar con HerdNet
 
 **POST** `/analyze-image`
 
-Upload a ZIP file for HerdNet analysis.
+Sube un archivo ZIP para análisis con HerdNet.
 
-**Parameters:**
-- `file`: ZIP file with images (required)
-- `patch_size`: Patch size for stitching (default: 512)
-- `overlap`: Overlap for stitching (default: 160)
-- `rotation`: Number of 90-degree rotations (default: 0)
-- `thumbnail_size`: Size for thumbnails (default: 256)
-- `include_thumbnails`: Include thumbnails (default: true)
-- `include_plots`: Include detection plots (default: false)
+**Parámetros:**
+- `file`: Archivo ZIP con imágenes (requerido)
+- `patch_size`: Tamaño de parche para unión (predeterminado: 512)
+- `overlap`: Superposición para unión (predeterminado: 160)
+- `rotation`: Número de rotaciones de 90 grados (predeterminado: 0)
+- `thumbnail_size`: Tamaño para miniaturas (predeterminado: 256)
+- `include_thumbnails`: Incluir miniaturas (predeterminado: true)
+- `include_plots`: Incluir gráficos de detección (predeterminado: false)
 
-**Response:**
+**Respuesta:**
 ```json
 {
   "success": true,
@@ -216,68 +216,68 @@ Upload a ZIP file for HerdNet analysis.
 }
 ```
 
-### Analyze Single Image with YOLO
+### Analizar Imagen Individual con YOLO
 
 **POST** `/analyze-single-image-yolo`
 
-Upload a single image for YOLOv11 analysis.
+Sube una imagen individual para análisis con YOLOv11.
 
-**Parameters:**
-- `file`: Single image file (PNG, JPG, JPEG, GIF, WebP, BMP, TIFF) (required)
-- `conf_threshold`: Confidence threshold (default: 0.25)
-- `iou_threshold`: IOU threshold for NMS (default: 0.45)
-- `img_size`: Image size for inference (default: 640)
-- `include_annotated_images`: Include annotated images (default: true)
+**Parámetros:**
+- `file`: Archivo de imagen individual (PNG, JPG, JPEG, GIF, WebP, BMP, TIFF) (requerido)
+- `conf_threshold`: Umbral de confianza (predeterminado: 0.25)
+- `iou_threshold`: Umbral IOU para NMS (predeterminado: 0.45)
+- `img_size`: Tamaño de imagen para inferencia (predeterminado: 640)
+- `include_annotated_images`: Incluir imágenes anotadas (predeterminado: true)
 
-**Response:** Same format as batch analysis, but with `total_images: 1`
+**Respuesta:** Mismo formato que análisis por lotes, pero con `total_images: 1`
 
-### Analyze Single Image with HerdNet
+### Analizar Imagen Individual con HerdNet
 
 **POST** `/analyze-single-image-herdnet`
 
-Upload a single image for HerdNet analysis (optimized for large aerial/satellite images).
+Sube una imagen individual para análisis con HerdNet (optimizado para imágenes aéreas/satelitales grandes).
 
-**Parameters:**
-- `file`: Single image file (PNG, JPG, JPEG, GIF, WebP, BMP, TIFF) (required)
-- `patch_size`: Patch size for stitching (default: 512)
-- `overlap`: Overlap for stitching (default: 160)
-- `rotation`: Number of 90-degree rotations (default: 0)
-- `thumbnail_size`: Size for thumbnails (default: 256)
-- `include_thumbnails`: Include thumbnails (default: true)
-- `include_plots`: Include detection plots (default: false)
+**Parámetros:**
+- `file`: Archivo de imagen individual (PNG, JPG, JPEG, GIF, WebP, BMP, TIFF) (requerido)
+- `patch_size`: Tamaño de parche para unión (predeterminado: 512)
+- `overlap`: Superposición para unión (predeterminado: 160)
+- `rotation`: Número de rotaciones de 90 grados (predeterminado: 0)
+- `thumbnail_size`: Tamaño para miniaturas (predeterminado: 256)
+- `include_thumbnails`: Incluir miniaturas (predeterminado: true)
+- `include_plots`: Incluir gráficos de detección (predeterminado: false)
 
-**Response:** Same format as batch analysis, but with `total_images: 1`
+**Respuesta:** Mismo formato que análisis por lotes, pero con `total_images: 1`
 
-**💡 Tip:** Use single image endpoints for quick testing or when you need real-time analysis without creating ZIP files!
+**💡 Consejo:** ¡Usa los endpoints de imagen individual para pruebas rápidas o cuando necesites análisis en tiempo real sin crear archivos ZIP!
 
-### Get Tasks
+### Obtener Tareas
 
 **GET** `/tasks`
 
-List all analysis tasks with optional filtering.
+Lista todas las tareas de análisis con filtrado opcional.
 
-**Query Parameters:**
-- `model_type`: Filter by 'yolo' or 'herdnet'
-- `status`: Filter by 'completed', 'processing', or 'failed'
-- `limit`: Maximum tasks to return (default: 100)
-- `offset`: Pagination offset (default: 0)
+**Parámetros de Consulta:**
+- `model_type`: Filtrar por 'yolo' o 'herdnet'
+- `status`: Filtrar por 'completed', 'processing', o 'failed'
+- `limit`: Máximo de tareas a devolver (predeterminado: 100)
+- `offset`: Desplazamiento de paginación (predeterminado: 0)
 
-### Get Task by ID
+### Obtener Tarea por ID
 
 **GET** `/tasks/<task_id>`
 
-Retrieve a specific task and its complete results.
+Recupera una tarea específica y sus resultados completos.
 
-**Response includes:**
-- Task metadata (status, timestamps, parameters)
-- Complete JSON response with all detections
-- All base64-encoded images (if included in original request)
+**La respuesta incluye:**
+- Metadatos de la tarea (estado, marcas de tiempo, parámetros)
+- Respuesta JSON completa con todas las detecciones
+- Todas las imágenes codificadas en base64 (si se incluyeron en la solicitud original)
 
-### Database Statistics
+### Estadísticas de Base de Datos
 
 **GET** `/database/stats`
 
-Get comprehensive database statistics.
+Obtener estadísticas completas de la base de datos.
 
 ```json
 {
@@ -291,156 +291,156 @@ Get comprehensive database statistics.
 }
 ```
 
-## 💾 Database Features
+## 💾 Características de la Base de Datos
 
-### What Gets Stored
+### Qué se Almacena
 
-Every analysis automatically stores:
+Cada análisis almacena automáticamente:
 
-**For YOLO:**
-- ✅ All detection data (coordinates, confidence, species)
-- ✅ Complete bounding box information
-- ✅ **All annotated images as base64** (if requested)
-- ✅ Summary statistics and processing parameters
+**Para YOLO:**
+- ✅ Todos los datos de detección (coordenadas, confianza, especies)
+- ✅ Información completa de cajas delimitadoras
+- ✅ **Todas las imágenes anotadas como base64** (si se solicita)
+- ✅ Estadísticas resumidas y parámetros de procesamiento
 
-**For HerdNet:**
-- ✅ All detection data (center points, confidence, species)
-- ✅ **All animal thumbnails as base64** (if requested)
-- ✅ **All detection plots as base64** (if requested)
-- ✅ Summary statistics and processing parameters
+**Para HerdNet:**
+- ✅ Todos los datos de detección (puntos centrales, confianza, especies)
+- ✅ **Todas las miniaturas de animales como base64** (si se solicita)
+- ✅ **Todos los gráficos de detección como base64** (si se solicita)
+- ✅ Estadísticas resumidas y parámetros de procesamiento
 
-### Workflow Example
+### Ejemplo de Flujo de Trabajo
 
 ```python
 import requests
 
-# 1. Run analysis
+# 1. Ejecutar análisis
 response = requests.post('http://localhost:8000/analyze-yolo', 
     files={'file': open('images.zip', 'rb')})
 task_id = response.json()['task_id']
 
-# 2. Retrieve complete results later (even after server restart)
+# 2. Recuperar resultados completos más tarde (incluso después de reiniciar el servidor)
 task_response = requests.get(f'http://localhost:8000/tasks/{task_id}')
 task = task_response.json()['task']
 
-# Access the complete original JSON response
+# Acceder a la respuesta JSON original completa
 original_response = task['result_data']
 base64_images = original_response.get('annotated_images', [])
 
-# 3. Get only detections
+# 3. Obtener solo detecciones
 detections = requests.get(f'http://localhost:8000/tasks/{task_id}/detections')
 
-# 4. View statistics
+# 4. Ver estadísticas
 stats = requests.get('http://localhost:8000/database/stats')
 ```
 
-## ☁️ Google Drive Model Loading
+## ☁️ Carga de Modelos desde Google Drive
 
-Models are automatically downloaded from Google Drive on first run. This makes deployment to cloud platforms like Streamlit Cloud easy without committing large model files to the repository.
+Los modelos se descargan automáticamente desde Google Drive en la primera ejecución. Esto facilita el despliegue en plataformas en la nube como Streamlit Cloud sin comprometer archivos de modelos grandes en el repositorio.
 
-**Features:**
-- ✅ Automatic download on first run
-- ✅ Cached locally for subsequent runs
-- ✅ No manual download required
-- ✅ Perfect for Streamlit Cloud deployment
+**Características:**
+- ✅ Descarga automática en la primera ejecución
+- ✅ Almacenamiento en caché local para ejecuciones posteriores
+- ✅ No se requiere descarga manual
+- ✅ Perfecto para despliegue en Streamlit Cloud
 
-**Model Files:**
+**Archivos de Modelos:**
 - `best.pt` (YOLOv11) - ~300 MB
 - `herdnet_model.pth` (HerdNet) - ~250 MB
 
-## 📊 Model Information
+## 📊 Información de Modelos
 
 ### YOLOv11
-- **Type:** Bounding box object detection
-- **Speed:** Fast (~1-2s per image)
-- **Best for:** Standard images, real-time detection
-- **Output:** Bounding boxes with confidence scores
+- **Tipo:** Detección de objetos con caja delimitadora
+- **Velocidad:** Rápido (~1-2s por imagen)
+- **Mejor para:** Imágenes estándar, detección en tiempo real
+- **Salida:** Cajas delimitadoras con puntuaciones de confianza
 
 ### HerdNet
-- **Type:** Point-based detection
-- **Speed:** Moderate (depends on image size)
-- **Best for:** Large aerial/satellite images
-- **Output:** Center points, thumbnails, plots
+- **Tipo:** Detección basada en puntos
+- **Velocidad:** Moderada (depende del tamaño de la imagen)
+- **Mejor para:** Imágenes aéreas/satelitales grandes
+- **Salida:** Puntos centrales, miniaturas, gráficos
 
-### Supported Species
-1. Buffalo (*Syncerus caffer*)
-2. Elephant (*Loxodonta africana*)
+### Especies Soportadas
+1. Búfalo (*Syncerus caffer*)
+2. Elefante (*Loxodonta africana*)
 3. Kob (*Kobus kob*)
 4. Topi (*Damaliscus lunatus*)
-5. Warthog (*Phacochoerus africanus*)
-6. Waterbuck (*Kobus ellipsiprymnus*)
+5. Jabalí Verrugoso (*Phacochoerus africanus*)
+6. Antílope Acuático (*Kobus ellipsiprymnus*)
 
-## 🛠️ Project Structure
+## 🛠️ Estructura del Proyecto
 
 ```
 back/
-├── app.py                    # Main Flask API
-├── streamlit_app.py          # Streamlit web interface
-├── database.py               # SQLite database module
-├── model_loader.py           # Google Drive model downloader
-├── test_api.py              # API testing script
-├── test_yolo_api.py         # YOLO testing script
-├── start.sh                 # Unix startup script
-├── start.bat                # Windows startup script
-├── requirements.txt         # Python dependencies
-├── README.md               # This file
-├── best.pt                 # YOLOv11 model (auto-downloaded)
-├── herdnet_model.pth      # HerdNet model (auto-downloaded)
-└── wildlife_detection.db  # SQLite database (auto-created)
+├── app.py                    # API Flask principal
+├── streamlit_app.py          # Interfaz web Streamlit
+├── database.py               # Módulo de base de datos SQLite
+├── model_loader.py           # Descargador de modelos Google Drive
+├── test_api.py              # Script de prueba de API
+├── test_yolo_api.py         # Script de prueba YOLO
+├── start.sh                 # Script de inicio Unix
+├── start.bat                # Script de inicio Windows
+├── requirements.txt         # Dependencias Python
+├── README.md               # Este archivo
+├── best.pt                 # Modelo YOLOv11 (auto-descargado)
+├── herdnet_model.pth      # Modelo HerdNet (auto-descargado)
+└── wildlife_detection.db  # Base de datos SQLite (auto-creada)
 ```
 
-## 🚀 Deployment
+## 🚀 Despliegue
 
-### Local Deployment
-Use the startup scripts for easy local deployment:
+### Despliegue Local
+Usa los scripts de inicio para un fácil despliegue local:
 ```bash
 ./start.sh  # Linux/Mac
 start.bat   # Windows
 ```
 
-### Cloud Deployment
+### Despliegue en la Nube
 
-The system has two components that need separate deployment:
+El sistema tiene dos componentes que necesitan despliegue separado:
 
-1. **Flask Backend** → Railway, Heroku, or Render
-2. **Streamlit Frontend** → Streamlit Cloud (free!)
+1. **Backend Flask** → Railway, Heroku, o Render
+2. **Frontend Streamlit** → Streamlit Cloud (¡gratis!)
 
-**📖 See [STREAMLIT_DEPLOYMENT_GUIDE.md](STREAMLIT_DEPLOYMENT_GUIDE.md) for detailed step-by-step instructions!**
+**📖 Ver [STREAMLIT_DEPLOYMENT_GUIDE.md](STREAMLIT_DEPLOYMENT_GUIDE.md) para instrucciones detalladas paso a paso!**
 
-Quick summary:
-- Use `requirements-backend.txt` for Flask backend
-- Use `requirements-streamlit.txt` for Streamlit frontend  
-- Configure `API_BASE_URL` in Streamlit secrets to point to your backend
-- Models auto-download from Google Drive on first run
+Resumen rápido:
+- Usa `requirements-backend.txt` para el backend Flask
+- Usa `requirements-streamlit.txt` para el frontend Streamlit  
+- Configura `API_BASE_URL` en los secretos de Streamlit para apuntar a tu backend
+- Los modelos se auto-descargan desde Google Drive en la primera ejecución
 
 ### Docker
-Docker deployment is supported. See `Dockerfile` for configuration.
+El despliegue con Docker está soportado. Ver `Dockerfile` para configuración.
 
-## 📝 Requirements
+## 📝 Requisitos
 
 - Python 3.8+
 - PyTorch 2.0+
-- CUDA (optional, for GPU acceleration)
-- 8GB+ RAM (16GB+ recommended)
+- CUDA (opcional, para aceleración GPU)
+- 8GB+ RAM (16GB+ recomendado)
 
-## 🐛 Troubleshooting
+## 🐛 Solución de Problemas
 
-### Models not downloading
-- Check internet connection
-- Verify Google Drive folder is accessible
-- Check disk space (need ~600MB free)
+### Los modelos no se descargan
+- Verificar conexión a internet
+- Verificar que la carpeta de Google Drive sea accesible
+- Verificar espacio en disco (necesitas ~600MB libres)
 
-### Out of memory
-- Reduce `patch_size` (HerdNet) or `img_size` (YOLO)
-- Process fewer images at once
-- Disable thumbnails/plots
+### Sin memoria
+- Reducir `patch_size` (HerdNet) o `img_size` (YOLO)
+- Procesar menos imágenes a la vez
+- Deshabilitar miniaturas/gráficos
 
-### Slow processing
-- Enable GPU acceleration
-- Reduce overlap (HerdNet)
-- Set `include_annotated_images=false` (YOLO)
+### Procesamiento lento
+- Habilitar aceleración GPU
+- Reducir superposición (HerdNet)
+- Establecer `include_annotated_images=false` (YOLO)
 
-## 📚 Citations
+## 📚 Citas
 
 **HerdNet:**
 ```
@@ -455,21 +455,22 @@ Ultralytics YOLOv11 (2024)
 https://github.com/ultralytics/ultralytics
 ```
 
-## 📄 License
+## 📄 Licencia
 
-This project uses:
-- **HerdNet model**: MIT License
-- **YOLOv11**: AGPL-3.0 License (Ultralytics)
+Este proyecto usa:
+- **Modelo HerdNet**: Licencia MIT
+- **YOLOv11**: Licencia AGPL-3.0 (Ultralytics)
 
-## 🤝 Support
+## 🤝 Soporte
 
-For issues related to:
-- **API/Streamlit**: Open an issue in this repository
-- **YOLOv11**: Visit https://github.com/ultralytics/ultralytics
-- **HerdNet**: Visit https://github.com/Alexandre-Delplanque/HerdNet
+Para problemas relacionados con:
+- **API/Streamlit**: Abre un issue en este repositorio
+- **YOLOv11**: Visita https://github.com/ultralytics/ultralytics
+- **HerdNet**: Visita https://github.com/Alexandre-Delplanque/HerdNet
 
-## 🙏 Acknowledgments
+## 🙏 Agradecimientos
 
-- **YOLOv11** by Ultralytics
-- **HerdNet** by Alexandre Delplanque (University of Liège)
-- Research published in Remote Sensing in Ecology and Conservation
+- **YOLOv11** por Ultralytics
+- **HerdNet** por Alexandre Delplanque (Universidad de Lieja)
+- Investigación publicada en Remote Sensing in Ecology and Conservation
+

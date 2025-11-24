@@ -202,7 +202,7 @@ def new_analysis_page():
     st.subheader("🤖 Selección de Modelo")
     model_choice = st.radio(
         "Elige el modelo de detección:",
-        ["YOLOv11 (Rápido, Cajas Delimitadoras)", "HerdNet (Aéreo, Detección por Puntos)"],
+        ["YOLOv11 (Cajas Delimitadoras)", "HerdNet (Detección por Puntos)"],
         help="YOLOv11: Detección rápida con cajas delimitadoras | HerdNet: Optimizado para imágenes aéreas con detección por puntos"
     )
     
@@ -214,16 +214,16 @@ def new_analysis_page():
         with col1:
             conf_threshold = st.slider("Umbral de Confianza", 0.1, 0.9, 0.25, 0.05)
         with col2:
-            iou_threshold = st.slider("Umbral IOU", 0.1, 0.9, 0.45, 0.05)
+            iou_threshold = st.slider("Umbral de coincidencia", 0.1, 0.9, 0.45, 0.05)
         with col3:
-            img_size = st.selectbox("Tamaño de Imagen", [416, 480, 640, 800, 960, 1280], index=2)
+            img_size = st.selectbox("Tamaño de Imagen", [416, 480, 640, 800, 960, 1280, 2560], index=2)
         
         include_annotated = st.checkbox("Incluir imágenes anotadas", value=True)
         
     else:  # HerdNet
         col1, col2 = st.columns(2)
         with col1:
-            patch_size = st.selectbox("Tamaño de Parche", [384, 512, 768, 1024], index=1)
+            patch_size = st.selectbox("Tamaño de Parche", [384, 512, 768, 1024, 2048], index=1)
             rotation = st.selectbox("Rotación (pasos de 90°)", [0, 1, 2, 3], index=0)
         with col2:
             overlap = st.slider("Superposición (píxeles)", 0, 300, 160, 16)
@@ -415,14 +415,29 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
         </div>
         """, unsafe_allow_html=True)
         
-        # Mostrar imagen anotada
-        img_bytes = base64.b64decode(img_data['annotated_image_base64'])
-        img = Image.open(BytesIO(img_bytes))
+        # Mostrar imágenes lado a lado
+        col1, col2 = st.columns(2)
         
-        # Contenedor de imagen
-        st.markdown('<div class="image-container">', unsafe_allow_html=True)
-        st.image(img, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Columna izquierda: Imagen Original
+        with col1:
+            st.markdown("**🖼️ Imagen Cargada**")
+            if 'original_image_base64' in img_data:
+                original_bytes = base64.b64decode(img_data['original_image_base64'])
+                original_img = Image.open(BytesIO(original_bytes))
+                st.markdown('<div class="image-container">', unsafe_allow_html=True)
+                st.image(original_img, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.info("Imagen original no disponible")
+        
+        # Columna derecha: Imagen Anotada
+        with col2:
+            st.markdown("**🎯 Imagen Con Detecciones**")
+            img_bytes = base64.b64decode(img_data['annotated_image_base64'])
+            img = Image.open(BytesIO(img_bytes))
+            st.markdown('<div class="image-container">', unsafe_allow_html=True)
+            st.image(img, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Obtener detecciones para esta imagen
         image_detections = [d for d in all_detections if d.get('image') == img_data['image_name']]
@@ -468,14 +483,29 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
         </div>
         """, unsafe_allow_html=True)
         
-        # Mostrar gráfico
-        img_bytes = base64.b64decode(plot_data['plot_base64'])
-        img = Image.open(BytesIO(img_bytes))
+        # Mostrar imágenes lado a lado
+        col1, col2 = st.columns(2)
         
-        # Contenedor de imagen
-        st.markdown('<div class="image-container">', unsafe_allow_html=True)
-        st.image(img, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Columna izquierda: Imagen Original
+        with col1:
+            st.markdown("**🖼️ Imagen Cargada**")
+            if 'original_image_base64' in plot_data:
+                original_bytes = base64.b64decode(plot_data['original_image_base64'])
+                original_img = Image.open(BytesIO(original_bytes))
+                st.markdown('<div class="image-container">', unsafe_allow_html=True)
+                st.image(original_img, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.info("Imagen original no disponible")
+        
+        # Columna derecha: Gráfico con Detecciones
+        with col2:
+            st.markdown("**🎯 Imagen Con Detecciones**")
+            img_bytes = base64.b64decode(plot_data['plot_base64'])
+            img = Image.open(BytesIO(img_bytes))
+            st.markdown('<div class="image-container">', unsafe_allow_html=True)
+            st.image(img, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Obtener detecciones para esta imagen
         image_detections = [d for d in all_detections if d.get('images') == plot_data['image_name']]

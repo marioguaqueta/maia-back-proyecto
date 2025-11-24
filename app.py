@@ -334,29 +334,39 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
             
             # Convert annotated image to base64 if there were detections
             if include_annotated_images and image_has_animals:
-                # Resize image if too large (to avoid huge base64 strings)
+                # Resize images if too large (to avoid huge base64 strings)
                 max_size = 1920
+                original_img_resized = original_img
+                annotated_img_resized = annotated_img
+                
                 if max(annotated_img.width, annotated_img.height) > max_size:
                     ratio = max_size / max(annotated_img.width, annotated_img.height)
                     new_size = (int(annotated_img.width * ratio), int(annotated_img.height * ratio))
-                    annotated_img = annotated_img.resize(new_size, Image.Resampling.LANCZOS)
+                    original_img_resized = original_img.resize(new_size, Image.Resampling.LANCZOS)
+                    annotated_img_resized = annotated_img.resize(new_size, Image.Resampling.LANCZOS)
                 
-                # Convert to base64
-                buffered = io.BytesIO()
-                annotated_img.save(buffered, format="JPEG", quality=85)
-                img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                # Convert original image to base64
+                buffered_original = io.BytesIO()
+                original_img_resized.save(buffered_original, format="JPEG", quality=85)
+                original_base64 = base64.b64encode(buffered_original.getvalue()).decode('utf-8')
+                
+                # Convert annotated image to base64
+                buffered_annotated = io.BytesIO()
+                annotated_img_resized.save(buffered_annotated, format="JPEG", quality=85)
+                annotated_base64 = base64.b64encode(buffered_annotated.getvalue()).decode('utf-8')
                 
                 annotated_images.append({
                     'image_name': img_name,
                     'detections_count': len(image_detections),
-                    'annotated_image_base64': img_base64,
+                    'original_image_base64': original_base64,
+                    'annotated_image_base64': annotated_base64,
                     'original_size': {
                         'width': original_img.width,
                         'height': original_img.height
                     },
                     'annotated_size': {
-                        'width': annotated_img.width,
-                        'height': annotated_img.height
+                        'width': annotated_img_resized.width,
+                        'height': annotated_img_resized.height
                     }
                 })
             
@@ -527,13 +537,21 @@ def analyze_images_with_evaluator(image_dir, patch_size=512, overlap=160, rotati
         plot_path = os.path.join(plots_dir, img_name)
         output_plot.save(plot_path, quality=95)
         
+        # Convert original image to base64
+        buffered_original = io.BytesIO()
+        img_copy.save(buffered_original, format="JPEG", quality=85)
+        original_base64 = base64.b64encode(buffered_original.getvalue()).decode('utf-8')
+        
         # Convert plot to base64
-        buffered = io.BytesIO()
-        output_plot.save(buffered, format="JPEG", quality=95)
-        plot_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        buffered_plot = io.BytesIO()
+        output_plot.save(buffered_plot, format="JPEG", quality=95)
+        plot_base64 = base64.b64encode(buffered_plot.getvalue()).decode('utf-8')
+        
         plots_data.append({
             'image_name': img_name,
-            'plot_base64': plot_base64
+            'original_image_base64': original_base64,
+            'plot_base64': plot_base64,
+            'detections_count': len(pts)
         })
         
         # Create thumbnails for each detection
