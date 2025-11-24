@@ -1287,43 +1287,46 @@ def analyze_single_image_herdnet_endpoint():
             image_path = os.path.join(temp_dir, image_filename)
             file.save(image_path)
             
-            # Process the image with HerdNet
+            # Process the image with HerdNet using the same approach as batch processing
             print(f"Processing image with HerdNet: {image_filename}")
             
-            # Load image as PIL Image
-            image = Image.open(image_path)
+            # Create a results directory
+            results_dir = os.path.join(temp_dir, 'results')
+            mkdir(results_dir)
             
-            # Convert to RGB if necessary
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
+            # Create a DataFrame with just this one image (same as batch processing)
+            df = pd.DataFrame(data={
+                'images': [image_filename], 
+                'x': [0], 
+                'y': [0], 
+                'labels': [1]
+            })
             
-            # Apply rotation if specified
-            if rotation > 0:
-                rot_degrees = rotation * 90
-                image = image.rotate(rot_degrees, expand=True)
+            # Setup transforms (same as batch processing)
+            end_transforms = []
+            if rotation != 0:
+                end_transforms.append(Rotate90(k=rotation))
+            end_transforms.append(DownSample(down_ratio=2, anno_type='point'))
             
-            # Convert to numpy array
-            image_np = np.array(image)
+            albu_transforms = [A.Normalize(mean=img_mean, std=img_std)]
             
-            # Apply preprocessing transforms (normalization)
-            albu_transform = A.Compose([
-                A.Normalize(mean=img_mean, std=img_std)
-            ])
+            # Create dataset
+            dataset = CSVDataset(
+                csv_file=df,
+                root_dir=temp_dir,
+                albu_transforms=albu_transforms,
+                end_transforms=end_transforms
+            )
             
-            # Apply normalization
-            transformed = albu_transform(image=image_np)
-            image_normalized = transformed['image']
+            # Create dataloader
+            dataloader = DataLoader(
+                dataset, 
+                batch_size=1, 
+                shuffle=False,
+                sampler=torch.utils.data.SequentialSampler(dataset)
+            )
             
-            # Convert to torch tensor [H, W, C] -> [C, H, W]
-            image_tensor = torch.from_numpy(image_normalized).permute(2, 0, 1).float()
-            
-            # Add batch dimension [C, H, W] -> [1, C, H, W]
-            image_tensor = image_tensor.unsqueeze(0)
-            
-            # Move to device
-            image_tensor = image_tensor.to(device)
-            
-            # Initialize stitcher
+            # Build the stitcher
             stitcher = HerdNetStitcher(
                 model=model,
                 size=(patch_size, patch_size),
@@ -1334,33 +1337,45 @@ def analyze_single_image_herdnet_endpoint():
                 device_name=device
             )
             
-            # Run inference with torch tensor
-            print(f"Running inference with image shape: {image_tensor.shape}")
-            output = stitcher(image_tensor)
+            # Build the evaluator
+            metrics = PointsMetrics(5, num_classes=num_classes)
+            evaluator = HerdNetEvaluator(
+                model=model,
+                dataloader=dataloader,
+                metrics=metrics,
+                lmds_kwargs=dict(kernel_size=(3, 3), adapt_ts=0.2, neg_ts=0.1),
+                device_name=device,
+                print_freq=1,
+                stitcher=stitcher,
+                work_dir=results_dir,
+                header='[SINGLE IMAGE INFERENCE]'
+            )
             
-            # Get detections
-            point_list = output['points']
-            class_list = output['classes']
-            scores_list = output['scores']
+            # Run inference
+            print(f"Running inference on single image...")
+            evaluator.evaluate(wandb_flag=False, viz=False, log_meters=False)
+            
+            # Get detections from evaluator
+            detections_df = evaluator.detections
+            detections_df.dropna(inplace=True)
+            detections_df['species'] = detections_df['labels'].map(classes_dict)
             
             # Process detections
             detections = []
             species_counts = {}
             
-            for point, cls, score in zip(point_list, class_list, scores_list):
-                x, y = point
-                # Get species name
-                species = ANIMAL_CLASSES.get(cls, f"class_{cls}")
+            for _, row in detections_df.iterrows():
+                species = row['species']
                 
                 # Count species
                 species_counts[species] = species_counts.get(species, 0) + 1
                 
                 detection = {
-                    'images': image_filename,
+                    'images': row['images'],
                     'species': species,
-                    'scores': float(score),
-                    'x': float(x),
-                    'y': float(y)
+                    'scores': float(row['scores']),
+                    'x': float(row['x']),
+                    'y': float(row['y'])
                 }
                 
                 detections.append(detection)
@@ -1386,6 +1401,21 @@ def analyze_single_image_herdnet_endpoint():
                     'include_plots': include_plots
                 }
             }
+            
+            # Load original image for thumbnails and plots
+            if (include_thumbnails or include_plots) and len(detections) > 0:
+                image = Image.open(image_path)
+                
+                # Apply rotation if specified (same as during inference)
+                if rotation > 0:
+                    rot_degrees = rotation * 90
+                    image = image.rotate(rot_degrees, expand=True)
+                
+                image_np = np.array(image)
+                
+                # Extract point and class lists from detections
+                point_list = [(int(det['y']), int(det['x'])) for det in detections]
+                class_list = [detections_df.iloc[i]['labels'] for i in range(len(detections))]
             
             # Generate thumbnails if requested
             if include_thumbnails and len(detections) > 0:
