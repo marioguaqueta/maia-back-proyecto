@@ -160,8 +160,36 @@ st.markdown("""
 [data-testid="stFileUploader"] section > button:hover {
     background-color: #FF6B6B;
 }
+
+
+/* Cambiar placeholder de drag & drop */
+[data-testid="stFileUploaderDropzoneInstructions"] div div::before {
+    content: "Arrastra y suelta tu archivo aquí";
+    font-size: 1rem;
+    color: #555;
+}
+
+/* Ocultar texto original */
+[data-testid="stFileUploaderDropzoneInstructions"] div div span {
+    display: none !important;
+}
+
+/* Cambiar texto de 'Browse files' */
+button[data-testid="stBaseButton-secondary"] p {
+    visibility: hidden;
+}
+
+button[data-testid="stBaseButton-secondary"]::after {
+    content: "Seleccionar archivo";
+    visibility: visible;
+}
+
+
 </style>
 """, unsafe_allow_html=True)
+
+
+
 
 
 def main():
