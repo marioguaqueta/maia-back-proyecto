@@ -140,50 +140,20 @@ st.markdown("""
     font-size: 0;
 }
 
-[data-testid="stFileUploader"] small::after {
-    content: "Límite 200MB por archivo";
-    font-size: 12px;
-    color: #6c757d;
+/* Target the specific Streamlit file uploader button */
+button[data-testid="stBaseButton-secondary"] span {
+    visibility: hidden;           /* Hide original text */
 }
 
-/* Mejorar el estilo del botón de examinar */
-[data-testid="stFileUploader"] section > button {
-    background-color: #FF4B4B;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.3s;
+/* Add your custom text */
+button[data-testid="stBaseButton-secondary"]::after {
+    content: "Subir archivo";     /* <-- Your new text here */
+    visibility: visible;
+    display: block;
+    margin-top: -1.2em;           /* Reposition text */
+    font-weight: 600;
+    color: white;                 /* Optional */
 }
-
-[data-testid="stFileUploader"] section > button:hover {
-    background-color: #FF6B6B;
-}
-
-
-/* Cambiar placeholder de drag & drop */
-[data-testid="stFileUploaderDropzoneInstructions"] div div::before {
-    content: "Arrastra y suelta tu archivo aquí";
-    font-size: 1rem;
-    color: #555;
-}
-
-/* Ocultar texto original */
-[data-testid="stFileUploaderDropzoneInstructions"] div div span {
-    display: none !important;
-}
-
-/* Cambiar texto de 'Browse files' */
-button[data-testid="stBaseButton-secondary"] p {
-    visibility: hidden;
-}
-
-button[data-testid="stBaseButton-secondary"]  {
-   content: "Seleccionar archivo";
-}
-
-
 
 </style>
 """, unsafe_allow_html=True)
