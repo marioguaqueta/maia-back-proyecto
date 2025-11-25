@@ -140,23 +140,6 @@ st.markdown("""
     font-size: 0;
 }
 
-[data-testid="stFileUploadDropzone"] > div:first-child {
-    display: none !important; /* Opcional: oculta el texto "Drag and drop..." */
-}
-
-/* Cambiar el texto del botón de subir archivo */
-[data-testid="stFileUploadDropzone"] button span {
-    visibility: hidden !important; /* Oculta el texto original */
-}
-
-[data-testid="stFileUploadDropzone"] button::after {
-    content: "Subir archivo";       /* ⬅ Nuevo texto del botón */
-    visibility: visible !important;
-    display: block;
-    margin-top: -1.1em;
-    font-weight: 600;
-    color: white;
-}
 
 </style>
 """, unsafe_allow_html=True)
