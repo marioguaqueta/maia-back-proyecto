@@ -252,7 +252,7 @@ def new_analysis_page():
             "📦 Selecciona tu archivo ZIP, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí",
             type=['zip'],
             help="El archivo ZIP debe contener imágenes de fauna silvestre en formato JPG, PNG o JPEG. Puedes incluir múltiples imágenes para procesamiento por lotes.",
-            label_visibility="visible"
+            label_visibility="visible",
             key="zip_uploader",
             config=st.file_uploader_config(
                 max_upload_size=100 * 1024 * 1024  # 100MB
