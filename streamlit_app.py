@@ -140,19 +140,22 @@ st.markdown("""
     font-size: 0;
 }
 
-/* Target the specific Streamlit file uploader button */
-button[data-testid="stBaseButton-secondary"] span {
-    visibility: hidden;           /* Hide original text */
+[data-testid="stFileUploadDropzone"] > div:first-child {
+    display: none !important; /* Opcional: oculta el texto "Drag and drop..." */
 }
 
-/* Add your custom text */
-button[data-testid="stBaseButton-secondary"]::after {
-    content: "Subir archivo";     /* <-- Your new text here */
-    visibility: visible;
+/* Cambiar el texto del botón de subir archivo */
+[data-testid="stFileUploadDropzone"] button span {
+    visibility: hidden !important; /* Oculta el texto original */
+}
+
+[data-testid="stFileUploadDropzone"] button::after {
+    content: "Subir archivo";       /* ⬅ Nuevo texto del botón */
+    visibility: visible !important;
     display: block;
-    margin-top: -1.2em;           /* Reposition text */
+    margin-top: -1.1em;
     font-weight: 600;
-    color: white;                 /* Optional */
+    color: white;
 }
 
 </style>
