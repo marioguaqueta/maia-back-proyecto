@@ -223,16 +223,16 @@ def new_analysis_page():
         uploaded_file = st.file_uploader(
             "📦 Selecciona tu archivo ZIP",
             type=['zip'],
-            help="El archivo ZIP debe contener imágenes de fauna silvestre en formato JPG, PNG, etc. Puedes incluir múltiples imágenes para procesamiento por lotes.",
-            label_visibility="visible"
+            help="El archivo ZIP debe contener imágenes de fauna silvestre en formato JPG, PNG o JPEG. Puedes incluir múltiples imágenes para procesamiento por lotes.",
+            label_visibility="hidden"
         )
         file_type = 'zip'
     else:
         uploaded_file = st.file_uploader(
             "🖼️ Selecciona tu imagen",
-            type=['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff'],
-            help="Formatos soportados: PNG, JPG, JPEG, GIF, WebP, BMP, TIFF. La imagen será analizada para detectar fauna silvestre.",
-            label_visibility="visible"
+            type=['png', 'jpg', 'jpeg'],
+            help="Formatos soportados: PNG, JPG, JPEG. La imagen será analizada para detectar fauna silvestre.",
+            label_visibility="hidden"
         )
         file_type = 'image'
     
@@ -848,12 +848,12 @@ def about_page():
     
     ### Contacto y Soporte
     
-    Para preguntas, sugerencias o reportar problemas, por favor contacta al equipo de desarrollo.
+    Para preguntas, sugerencias o reportar problemas, por favor contacta al administrador de la plataforma al {ADMIN_EMAIL}
     
     ### Versión
     
-    **Versión:** 2.1.0  
-    **Última Actualización:** Noviembre 2024  
+    **Versión:** 1.0.0  
+    **Última Actualización:** Noviembre 2025  
     **Estado:** Producción
     """)
 
