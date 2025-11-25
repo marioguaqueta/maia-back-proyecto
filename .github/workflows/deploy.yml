@@ -5,6 +5,26 @@ on:
     branches:
       - main
       - master
+    paths-ignore:
+      # Frontend files (Streamlit) - no need to redeploy backend
+      - 'streamlit_app.py'
+      - '.streamlit/**'
+      - 'requirements-streamlit.txt'
+      # Documentation files
+      - '**.md'
+      - 'CHANGELOG.md'
+      - 'README*.md'
+      - 'docs/**'
+      # Test and helper files
+      - 'test_*.py'
+      - 'create_test_zip.py'
+      # Git and IDE files
+      - '.gitignore'
+      - '.vscode/**'
+      - '.idea/**'
+      # Other non-backend files
+      - 'start.sh'
+      - 'start.bat'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
