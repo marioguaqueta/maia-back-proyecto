@@ -20,10 +20,15 @@ API_BASE_URL = os.getenv(
     st.secrets.get("API_BASE_URL", "http://localhost:8000")
 )
 
+ADMIN_EMAIL= os.getenv(
+    "ADMIN_EMAIL",
+    st.secrets.get("ADMIN_EMAIL", "info@grupo12.yolomodel.com")
+)
+
 # Configuración de página
 st.set_page_config(
     page_title="Detección de Fauna Africana",
-    page_icon="🦁",
+    page_icon="🐘",
     layout="wide"
 )
 
@@ -106,6 +111,55 @@ st.markdown("""
     margin: 15px 0;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+/* Traducción del widget de carga de archivos a español */
+[data-testid="stFileUploader"] section > button {
+    /* Ocultar el texto original "Browse files" */
+    font-size: 0;
+}
+
+[data-testid="stFileUploader"] section > button::after {
+    /* Añadir texto en español */
+    content: "Examinar archivos";
+    font-size: 14px;
+    font-weight: 400;
+}
+
+/* Cambiar el texto de "Drag and drop file here" */
+[data-testid="stFileUploader"] section > div[data-testid="stFileUploaderDropzone"] > div > span {
+    font-size: 0;
+}
+
+[data-testid="stFileUploader"] section > div[data-testid="stFileUploaderDropzone"] > div > span::after {
+    content: "Arrastra y suelta el archivo aquí";
+    font-size: 14px;
+}
+
+/* Cambiar "Limit XMB per file" */
+[data-testid="stFileUploader"] small {
+    font-size: 0;
+}
+
+[data-testid="stFileUploader"] small::after {
+    content: "Límite 200MB por archivo";
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* Mejorar el estilo del botón de examinar */
+[data-testid="stFileUploader"] section > button {
+    background-color: #FF4B4B;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+[data-testid="stFileUploader"] section > button:hover {
+    background-color: #FF6B6B;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -142,14 +196,14 @@ def new_analysis_page():
         
         col1, col2 = st.columns(2)
         with col1:
-            st.success(f"✓ Estado de la API: {health['status']}")
+            st.success(f"✓ Estado del servicio: {health['status']}. La herramienta está lista para ser usada.")
         with col2:
             models_info = health.get('models', {})
             yolo_status = "✓ Cargado" if models_info.get('yolov11', {}).get('loaded') else "✗ No cargado"
             herdnet_status = "✓ Cargado" if models_info.get('herdnet', {}).get('loaded') else "✗ No cargado"
             st.info(f"YOLOv11: {yolo_status} | HerdNet: {herdnet_status}")
     except:
-        st.error("❌ No se puede conectar a la API. Por favor, asegúrese de que el backend esté en ejecución.")
+        st.error(f"❌ No se puede conectar con el servicio. Por favor, contactar al administrador de la plataforma para resolver el problema al {ADMIN_EMAIL}.")
         return
     
     st.markdown("---")
@@ -167,16 +221,18 @@ def new_analysis_page():
     # File uploader según el tipo
     if "ZIP" in upload_type:
         uploaded_file = st.file_uploader(
-            "Sube un archivo ZIP con imágenes",
+            "📦 Selecciona tu archivo ZIP",
             type=['zip'],
-            help="Sube un archivo ZIP con imágenes de fauna silvestre para análisis por lotes"
+            help="El archivo ZIP debe contener imágenes de fauna silvestre en formato JPG, PNG, etc. Puedes incluir múltiples imágenes para procesamiento por lotes.",
+            label_visibility="visible"
         )
         file_type = 'zip'
     else:
         uploaded_file = st.file_uploader(
-            "Sube una imagen",
+            "🖼️ Selecciona tu imagen",
             type=['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff'],
-            help="Sube una imagen individual de fauna silvestre para analizar"
+            help="Formatos soportados: PNG, JPG, JPEG, GIF, WebP, BMP, TIFF. La imagen será analizada para detectar fauna silvestre.",
+            label_visibility="visible"
         )
         file_type = 'image'
     
@@ -237,7 +293,7 @@ def new_analysis_page():
     
     # Botón para ejecutar análisis
     st.markdown("---")
-    if st.button("🚀 Ejecutar Análisis", type="primary", use_container_width=True):
+    if st.button("Ejecutar Análisis", type="primary", use_container_width=True):
         spinner_text = "Procesando imagen..." if file_type == 'image' else "Procesando imágenes... Esto puede tomar algunos minutos."
         
         with st.spinner(spinner_text):
@@ -278,10 +334,10 @@ def new_analysis_page():
                     display_results(result, model_choice, file_type)
                 else:
                     error_msg = response.json().get('message', response.json().get('error', 'Error desconocido'))
-                    st.error(f"❌ Análisis fallido: {error_msg}")
+                    st.error(f"❌ Análisis fallido: Por favor comparte este mensaje al administrador para resolver el problema al {ADMIN_EMAIL}: {error_msg}")
                     
             except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+                st.error(f"❌ Error: Por favor comparte este mensaje al administrador para resolver el problema al {ADMIN_EMAIL}: {str(e)}")
 
 
 def create_detections_table(result, model_choice):
@@ -618,9 +674,8 @@ def display_results(result, model_choice, file_type='zip'):
             render_func=render_yolo_image_card,
             images_per_row=1
         )
-    
-    # Gráficos de detección (HerdNet)
-    if 'plots' in result:
+    elif 'plots' in result:
+
         st.subheader("🗺️ Gráficos de Detección - Resultados")
         
         # Obtener detecciones para tabla
@@ -633,18 +688,14 @@ def display_results(result, model_choice, file_type='zip'):
             render_func=render_herdnet_image_card,
             images_per_row=1
         )
-    
-    # Miniaturas (HerdNet) - mantener vista de miniaturas existente
-    if 'thumbnails' in result:
-        st.subheader("🔍 Miniaturas de Animales")
-        cols = st.columns(5)
-        for idx, thumb in enumerate(result['thumbnails'][:20]):  # Mostrar primeras 20
-            with cols[idx % 5]:
-                img_bytes = base64.b64decode(thumb['thumbnail_base64'])
-                img = Image.open(BytesIO(img_bytes))
-                st.image(img, caption=f"{thumb['species']} ({thumb['scores']:.2f})", use_container_width=True)
-
-
+    else:
+        st.subheader("❌ No se encontraron resultados")
+        st.info("No se encontraron resultados para esta tarea, por favor intente nuevamente con nuevos parámetros o suba un nuevo archivo") 
+        if result.get('model', "") == "YOLOv11":
+            st.info("Por favor intente nuevamente con nuevos parámetros de Umbral de Confianza, Umbral de Coincidencia (IOU) y Tamaño de Imagen")
+        elif result.get('model', "") == "HerdNet":
+            st.info("Por favor intente nuevamente con nuevos parámetros de Tamaño de Parche, Tamaño de Miniatura, Rotación y Superposición")
+        
 def view_results_page():
     """Página para ver resultados pasados."""
     st.header("📊 Ver Resultados Anteriores")
