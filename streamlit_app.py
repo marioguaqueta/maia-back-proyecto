@@ -203,7 +203,7 @@ def new_analysis_page():
             herdnet_status = "✓ Cargado" if models_info.get('herdnet', {}).get('loaded') else "✗ No cargado"
             st.info(f"YOLOv11: {yolo_status} | HerdNet: {herdnet_status}")
     except:
-        st.error(f"❌ No se puede conectar con el servicio. Por favor, contactar al administrador de la plataforma para resolver el problema al {ADMIN_EMAIL}.")
+        st.error(f"❌ No se puede conectar con el servicio. Por favor, contacta al administrador de la plataforma para resolver el problema al correo {ADMIN_EMAIL}.")
         return
     
     st.markdown("---")
@@ -221,18 +221,19 @@ def new_analysis_page():
     # File uploader según el tipo
     if "ZIP" in upload_type:
         uploaded_file = st.file_uploader(
-            "📦 Selecciona tu archivo ZIP",
+            "📦 Selecciona tu archivo ZIP, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí",
             type=['zip'],
             help="El archivo ZIP debe contener imágenes de fauna silvestre en formato JPG, PNG o JPEG. Puedes incluir múltiples imágenes para procesamiento por lotes.",
-            label_visibility="hidden"
+            label_visibility="visible"
+            
         )
         file_type = 'zip'
     else:
         uploaded_file = st.file_uploader(
-            "🖼️ Selecciona tu imagen",
+            "🖼️ Selecciona tu imagen, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí",
             type=['png', 'jpg', 'jpeg'],
             help="Formatos soportados: PNG, JPG, JPEG. La imagen será analizada para detectar fauna silvestre.",
-            label_visibility="hidden"
+            label_visibility="visible"
         )
         file_type = 'image'
     
