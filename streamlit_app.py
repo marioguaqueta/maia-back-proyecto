@@ -253,7 +253,13 @@ def new_analysis_page():
             type=['zip'],
             help="El archivo ZIP debe contener imágenes de fauna silvestre en formato JPG, PNG o JPEG. Puedes incluir múltiples imágenes para procesamiento por lotes.",
             label_visibility="visible"
-            
+            key="zip_uploader",
+            config=st.file_uploader_config(
+                max_upload_size=100 * 1024 * 1024  # 100MB
+                help="El archivo debe ser menor a 100MB",
+                label_visibility="visible",
+                key="zip_uploader_config"
+            )
         )
         file_type = 'zip'
     else:
@@ -261,7 +267,14 @@ def new_analysis_page():
             "🖼️ Selecciona tu imagen, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí",
             type=['png', 'jpg', 'jpeg'],
             help="Formatos soportados: PNG, JPG, JPEG. La imagen será analizada para detectar fauna silvestre.",
-            label_visibility="visible"
+            label_visibility="visible",
+            key="image_uploader",
+            config=st.file_uploader_config(
+                max_upload_size=100 * 1024 * 1024  # 100MB
+                help="El archivo debe ser menor a 100MB",
+                label_visibility="visible",
+                key="image_uploader_config"
+            )
         )
         file_type = 'image'
     
