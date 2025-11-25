@@ -159,7 +159,13 @@ SPANISH_NAMES = {
     'topi': 'Topi',
     'warthog': 'Jabalí Verrugoso',
     'waterbuck': 'Antílope Acuático',
-    'no_animal': 'Sin Animal'
+    'no_animal': 'Sin Animal',
+    'species_A': 'Antilope',
+    'species_B': 'Búfalo',
+    'species_E': 'Elefante',
+    'species_K': 'Antilope Africano',
+    'species_WH': 'Jabalí',
+    'species_WB': 'Antílope Acuático'
 }
 
 def translate_to_spanish(english_name):
@@ -313,7 +319,7 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
                     bbox = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
                     
                     # Get class name (keep in English during processing)
-                    class_name = YOLO_CLASSES.get(class_id, f"class_{class_id}")
+                    class_name = SPANISH_NAMES.get(YOLO_CLASSES.get(class_id, f"class_{class_id}"))
                     
                     # Update species counts
                     species_counts[class_name] = species_counts.get(class_name, 0) + 1
@@ -853,6 +859,24 @@ def analyze_yolo_endpoint():
               type: array
               items:
                 type: object
+                properties:
+                  image_name:
+                    type: string
+                  detections_count:
+                    type: integer
+                  original_image_base64:
+                    type: string
+                    description: Base64 encoded original image (non-annotated)
+                  annotated_image_base64:
+                    type: string
+                    description: Base64 encoded image with bounding boxes
+                  original_size:
+                    type: object
+                    properties:
+                      width:
+                        type: integer
+                      height:
+                        type: integer
             processing_time_seconds:
               type: number
       400:
@@ -1148,6 +1172,17 @@ def analyze_image_endpoint():
               type: array
               items:
                 type: object
+                properties:
+                  image_name:
+                    type: string
+                  detections_count:
+                    type: integer
+                  original_image_base64:
+                    type: string
+                    description: Base64 encoded original image (non-inferred)
+                  plot_base64:
+                    type: string
+                    description: Base64 encoded image with detection points
             processing_time_seconds:
               type: number
       400:
@@ -1337,9 +1372,42 @@ def analyze_single_image_yolo_endpoint():
         type: string
         required: false
         default: "true"
+        description: Include annotated images with bounding boxes
     responses:
       200:
         description: Analysis completed successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            task_id:
+              type: string
+            model:
+              type: string
+            summary:
+              type: object
+            detections:
+              type: array
+            annotated_images:
+              type: array
+              items:
+                type: object
+                properties:
+                  image_name:
+                    type: string
+                  detections_count:
+                    type: integer
+                  original_image_base64:
+                    type: string
+                    description: Base64 encoded original image (non-annotated)
+                  annotated_image_base64:
+                    type: string
+                    description: Base64 encoded image with bounding boxes
+                  original_size:
+                    type: object
+            processing_time_seconds:
+              type: number
       400:
         description: Bad request
       500:
@@ -1498,19 +1566,25 @@ def analyze_single_image_yolo_endpoint():
                 # Convert to PIL Image
                 annotated_pil = Image.fromarray(annotated_img[..., ::-1])  # BGR to RGB
                 
-                # Get original dimensions
+                # Get original image
                 orig_img = Image.open(image_path)
                 orig_width, orig_height = orig_img.size
                 
-                # Convert to base64
-                buffered = io.BytesIO()
-                annotated_pil.save(buffered, format="PNG")
-                img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                # Convert original image to base64
+                buffered_original = io.BytesIO()
+                orig_img.save(buffered_original, format="JPEG", quality=85)
+                original_base64 = base64.b64encode(buffered_original.getvalue()).decode('utf-8')
+                
+                # Convert annotated image to base64
+                buffered_annotated = io.BytesIO()
+                annotated_pil.save(buffered_annotated, format="PNG")
+                annotated_base64 = base64.b64encode(buffered_annotated.getvalue()).decode('utf-8')
                 
                 annotated_images.append({
                     'image_name': image_filename,
                     'detections_count': len(detections),
-                    'annotated_image_base64': img_base64,
+                    'original_image_base64': original_base64,
+                    'annotated_image_base64': annotated_base64,
                     'original_size': {
                         'width': orig_width,
                         'height': orig_height
@@ -1613,9 +1687,42 @@ def analyze_single_image_herdnet_endpoint():
         type: string
         required: false
         default: "false"
+        description: Include detection plots with marked points
     responses:
       200:
         description: Analysis completed successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            task_id:
+              type: string
+            model:
+              type: string
+            summary:
+              type: object
+            detections:
+              type: array
+            thumbnails:
+              type: array
+            plots:
+              type: array
+              items:
+                type: object
+                properties:
+                  image_name:
+                    type: string
+                  detections_count:
+                    type: integer
+                  original_image_base64:
+                    type: string
+                    description: Base64 encoded original image (non-inferred)
+                  plot_base64:
+                    type: string
+                    description: Base64 encoded image with detection points
+            processing_time_seconds:
+              type: number
       400:
         description: Bad request
       500:
@@ -1851,6 +1958,12 @@ def analyze_single_image_herdnet_endpoint():
             if include_plots and len(detections) > 0:
                 plots = []
                 
+                # Convert original image to base64
+                original_pil = Image.fromarray(image_np)
+                buffered_original = io.BytesIO()
+                original_pil.save(buffered_original, format="JPEG", quality=85)
+                original_base64 = base64.b64encode(buffered_original.getvalue()).decode('utf-8')
+                
                 # Create plot with Spanish labels
                 class_labels_spanish = [translate_to_spanish(ANIMAL_CLASSES.get(i, f"class_{i}")) 
                                        for i in range(len(ANIMAL_CLASSES))]
@@ -1862,15 +1975,16 @@ def analyze_single_image_herdnet_endpoint():
                     radius=10
                 )
                 
-                # Convert to PIL and base64
+                # Convert plot to PIL and base64
                 plot_pil = Image.fromarray(plot_img)
-                buffered = io.BytesIO()
-                plot_pil.save(buffered, format="PNG")
-                plot_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                buffered_plot = io.BytesIO()
+                plot_pil.save(buffered_plot, format="PNG")
+                plot_base64 = base64.b64encode(buffered_plot.getvalue()).decode('utf-8')
                 
                 plots.append({
                     'image_name': image_filename,
                     'detections_count': len(detections),
+                    'original_image_base64': original_base64,
                     'plot_base64': plot_base64
                 })
                 
