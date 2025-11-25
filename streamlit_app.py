@@ -214,16 +214,16 @@ def new_analysis_page():
         with col1:
             conf_threshold = st.slider("Umbral de Confianza", 0.1, 0.9, 0.25, 0.05)
         with col2:
-            iou_threshold = st.slider("Umbral de coincidencia", 0.1, 0.9, 0.45, 0.05)
+            iou_threshold = st.slider("Umbral de Coincidencia (IOU) ", 0.1, 0.9, 0.45, 0.05)
         with col3:
-            img_size = st.selectbox("Tamaño de Imagen", [416, 480, 640, 800, 960, 1280, 2560], index=2)
+            img_size = st.selectbox("Tamaño de Imagen", [416, 480, 640, 800, 960, 1280, 2560, 5120, 10240], index=2)
         
-        include_annotated = st.checkbox("Incluir imágenes anotadas", value=True)
+        include_annotated = True
         
     else:  # HerdNet
         col1, col2 = st.columns(2)
         with col1:
-            patch_size = st.selectbox("Tamaño de Parche", [384, 512, 768, 1024, 2048], index=1)
+            patch_size = st.selectbox("Tamaño de Parche", [384, 512, 768, 1024, 2048, 4096, 8192, 16384], index=1)
             rotation = st.selectbox("Rotación (pasos de 90°)", [0, 1, 2, 3], index=0)
         with col2:
             overlap = st.slider("Superposición (píxeles)", 0, 300, 160, 16)
@@ -231,9 +231,9 @@ def new_analysis_page():
         
         col3, col4 = st.columns(2)
         with col3:
-            include_thumbnails = st.checkbox("Incluir miniaturas", value=True)
+            include_thumbnails = False
         with col4:
-            include_plots = st.checkbox("Incluir gráficos de detección", value=False)
+            include_plots = True
     
     # Botón para ejecutar análisis
     st.markdown("---")
