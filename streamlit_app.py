@@ -179,10 +179,10 @@ button[data-testid="stBaseButton-secondary"] p {
     visibility: hidden;
 }
 
-button[data-testid="stBaseButton-secondary"]::after {
-    content: "Seleccionar archivo";
-    visibility: visible;
+button[data-testid="stBaseButton-secondary"]  {
+   content: "Seleccionar archivo";
 }
+
 
 
 </style>
