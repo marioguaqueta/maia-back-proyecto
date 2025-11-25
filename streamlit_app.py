@@ -616,7 +616,7 @@ def display_results(result, model_choice, file_type='zip'):
             images=result['annotated_images'],
             all_detections=all_detections,
             render_func=render_yolo_image_card,
-            images_per_row=2
+            images_per_row=1
         )
     
     # Gráficos de detección (HerdNet)
@@ -631,7 +631,7 @@ def display_results(result, model_choice, file_type='zip'):
             images=result['plots'],
             all_detections=all_detections,
             render_func=render_herdnet_image_card,
-            images_per_row=2
+            images_per_row=1
         )
     
     # Miniaturas (HerdNet) - mantener vista de miniaturas existente
