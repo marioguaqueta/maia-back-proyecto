@@ -13,6 +13,10 @@ import plotly.graph_objects as go
 import pandas as pd
 from datetime import datetime
 import os
+import toml
+
+config = toml.load(".streamlit/config.toml")
+max_mb = config["server"]["maxUploadSize"]
 
 # Configuración - puede ser sobrescrita por variable de entorno o secretos de Streamlit
 API_BASE_URL = os.getenv(
@@ -154,34 +158,51 @@ st.markdown("""
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Traducción del widget de carga de archivos a español */
-[data-testid="stFileUploader"] section > button {
-    /* Ocultar el texto original "Browse files" */
-    font-size: 0;
+
+/* ============================================
+   BOTÓN: Reemplazar “Browse files”
+   ============================================ */
+
+/* Oculta el texto original del botón */
+[data-testid="stFileUploader"] [data-testid="stBaseButton-secondary"] {
+    font-size: 0 !important;
 }
 
-[data-testid="stFileUploader"] section > button::after {
-    /* Añadir texto en español */
-    content: "Examinar archivos";
-    font-size: 14px;
-    font-weight: 400;
+/* Inserta texto nuevo */
+[data-testid="stFileUploader"] [data-testid="stBaseButton-secondary"]::after {
+    content: "Examinar archivos" !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
 }
 
-/* Cambiar el texto de "Drag and drop file here" */
-[data-testid="stFileUploader"] section > div[data-testid="stFileUploaderDropzone"] > div > span {
-    font-size: 0;
+/* ============================================
+   TEXTO PRINCIPAL: “Drag and drop file here”
+   ============================================ */
+
+/* Oculta SOLO el texto principal (primer span dentro del div de instrucciones) */
+[data-testid="stFileUploaderDropzoneInstructions"] div span:nth-of-type(1) {
+    font-size: 0 !important;
 }
 
-[data-testid="stFileUploader"] section > div[data-testid="stFileUploaderDropzone"] > div > span::after {
-    content: "Arrastra y suelta el archivo aquí";
-    font-size: 14px;
+[data-testid="stFileUploaderDropzoneInstructions"] div span:nth-of-type(1)::after {
+    content: "Arrastra y suelta el archivo aquí" !important;
+    font-size: 14px !important;
 }
 
-/* Cambiar "Limit XMB per file" */
-[data-testid="stFileUploader"] small {
-    font-size: 0;
+/* ============================================
+   TEXTO SECUNDARIO: “Limit XMB per file • ZIP”
+   ============================================ */
+
+/* Oculta el texto secundario (segundo span dentro del div) */
+[data-testid="stFileUploaderDropzoneInstructions"] div span:nth-of-type(2) {
+    font-size: 0 !important;
 }
 
+[data-testid="stFileUploaderDropzoneInstructions"] div span:nth-of-type(2)::after {
+    content: f"Límite {max_mb}MB por archivo • ZIP" !important;
+    font-size: 12px !important;
+    opacity: 0.85;
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -247,7 +268,7 @@ def new_analysis_page():
     # File uploader según el tipo
     if "ZIP" in upload_type:
         uploaded_file = st.file_uploader(
-            "📦 Selecciona tu archivo ZIP, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí",
+            f"📦 Selecciona tu archivo ZIP, da click en el botón 'Examinar archivos' para seleccionar el archivo o arrastra y suelta el archivo aquí. Máximo tamaño {max_mb}MB",
             type=['zip'],
             help="El archivo ZIP debe contener imágenes de fauna silvestre en formato JPG, PNG o JPEG. Puedes incluir múltiples imágenes para procesamiento por lotes.",
             label_visibility="visible",
@@ -256,7 +277,7 @@ def new_analysis_page():
         file_type = 'zip'
     else:
         uploaded_file = st.file_uploader(
-            "🖼️ Selecciona tu imagen, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí",
+            f"🖼️ Selecciona tu imagen, da click en el botón 'Examinar archivos' para seleccionar el archivo o arrastra y suelta el archivo aquí. Máximo tamaño {max_mb}MB",
             type=['png', 'jpg', 'jpeg'],
             help="Formatos soportados: PNG, JPG, JPEG. La imagen será analizada para detectar fauna silvestre.",
             label_visibility="visible",
