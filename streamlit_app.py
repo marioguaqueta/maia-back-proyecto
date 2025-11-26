@@ -917,10 +917,10 @@ def about_page():
     
     ### Modelos
     
-    #### 🎯 YOLOv11
+    #### 🎯 YOLOv11s con postentrenamiento para detección de imágenes aéreas con fauna africana 
     - **Tipo:** Detección de objetos con cajas delimitadoras
     - **Velocidad:** Rápido (1-2 segundos por imagen)
-    - **Mejor para:** Imágenes estándar, detección en tiempo real
+    - **Mejor para:** Imágenes aéreas, detección en tiempo real
     - **Salida:** Cajas delimitadoras alrededor de los animales
     """
     
@@ -937,8 +937,8 @@ def about_page():
     ### Especies Soportadas
     1. Búfalo (*Syncerus caffer*)
     2. Elefante (*Loxodonta africana*)
-    3. Kob (*Kobus kob*)
-    4. Topi (*Damaliscus lunatus*)
+    3. Antilope Africano (*Kobus kob*)
+    4. Antílope (*Damaliscus lunatus*)
     5. Jabalí Verrugoso (*Phacochoerus africanus*)
     6. Antílope Acuático (*Kobus ellipsiprymnus*)
     
@@ -954,9 +954,17 @@ def about_page():
     Multispecies detection and identification of African mammals in aerial imagery 
     using convolutional neural networks. Remote Sensing in Ecology and Conservation, 8(2), 166-179.
     ```
+    ```
+    Alexandre Delplanque, Samuel Foucher, Jérôme Théau, Elsa Bussière, Cédric Vermeulen, Philippe Lejeune. (2023)
+    From crowd to herd counting: How to precisely detect and count African mammals using aerial imagery and deep learning?, 197, 167-180
+    ```
+    ```
+    Qian Y, Humphries GRW, Trathan PN, Lowther A, Donovan CR.  (2023)
+    Counting animals in aerial images with a density map estimation model, 7;13(4)
+    ```
     """
     
-    models_section += """
+    models_section += f"""
     **YOLOv11:**
     ```
     Ultralytics YOLOv11 (2024)
