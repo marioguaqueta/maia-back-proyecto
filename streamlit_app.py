@@ -13,6 +13,10 @@ import plotly.graph_objects as go
 import pandas as pd
 from datetime import datetime
 import os
+import toml
+
+config = toml.load(".streamlit/config.toml")
+max_mb = config["server"]["maxUploadSize"]
 
 # Configuración - puede ser sobrescrita por variable de entorno o secretos de Streamlit
 API_BASE_URL = os.getenv(
@@ -130,32 +134,30 @@ st.markdown("""
 }
 
 /* ============================================
-   TEXTO: “Drag and drop file here”
+   TEXTO PRINCIPAL: “Drag and drop file here”
    ============================================ */
 
-/* Oculta texto original */
-[data-testid="stFileUploaderDropzoneInstructions"] span:first-of-type {
+/* Oculta SOLO el texto principal (primer span dentro del div de instrucciones) */
+[data-testid="stFileUploaderDropzoneInstructions"] div span:nth-of-type(1) {
     font-size: 0 !important;
 }
 
-/* Inserta nueva traducción */
-[data-testid="stFileUploaderDropzoneInstructions"] span:first-of-type::after {
+[data-testid="stFileUploaderDropzoneInstructions"] div span:nth-of-type(1)::after {
     content: "Arrastra y suelta el archivo aquí" !important;
     font-size: 14px !important;
 }
 
 /* ============================================
-   TEXTO: “Limit XMB per file • ZIP”
+   TEXTO SECUNDARIO: “Limit XMB per file • ZIP”
    ============================================ */
 
-/* Ocultar texto original */
-[data-testid="stFileUploaderDropzoneInstructions"] span:last-of-type {
+/* Oculta el texto secundario (segundo span dentro del div) */
+[data-testid="stFileUploaderDropzoneInstructions"] div span:nth-of-type(2) {
     font-size: 0 !important;
 }
 
-/* Insertar traducción */
-[data-testid="stFileUploaderDropzoneInstructions"] span:last-of-type::after {
-    content: "Límite 100MB por archivo • ZIP" !important;
+[data-testid="stFileUploaderDropzoneInstructions"] div span:nth-of-type(2)::after {
+    content: f"Límite {max_mb}MB por archivo • ZIP" !important;
     font-size: 12px !important;
     opacity: 0.85;
 }
@@ -224,7 +226,7 @@ def new_analysis_page():
     # File uploader según el tipo
     if "ZIP" in upload_type:
         uploaded_file = st.file_uploader(
-            "📦 Selecciona tu archivo ZIP, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí",
+            f"📦 Selecciona tu archivo ZIP, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí. Máximo tamaño {max_mb}MB",
             type=['zip'],
             help="El archivo ZIP debe contener imágenes de fauna silvestre en formato JPG, PNG o JPEG. Puedes incluir múltiples imágenes para procesamiento por lotes.",
             label_visibility="visible",
@@ -233,7 +235,7 @@ def new_analysis_page():
         file_type = 'zip'
     else:
         uploaded_file = st.file_uploader(
-            "🖼️ Selecciona tu imagen, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí",
+            f"🖼️ Selecciona tu imagen, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí. Máximo tamaño {max_mb}MB",
             type=['png', 'jpg', 'jpeg'],
             help="Formatos soportados: PNG, JPG, JPEG. La imagen será analizada para detectar fauna silvestre.",
             label_visibility="visible",
