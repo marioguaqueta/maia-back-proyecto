@@ -5,17 +5,17 @@ Model Loader - Downloads models from Google Drive if not present locally
 import os
 import gdown
 
-# Google Drive folder ID
-GDRIVE_FOLDER_ID = "1BMy6W7_3JhSA6uSEzze48ZR22qJv4s2R"
+# Google Drive folder ID (from environment variable or default)
+GDRIVE_FOLDER_ID = os.environ.get('GDRIVE_FOLDER_ID', '1BMy6W7_3JhSA6uSEzze48ZR22qJv4s2R')
 
-# Model configurations
+# Model configurations (filenames from environment variables or defaults)
 MODELS = {
     'yolo': {
-        'filename': 'best.pt',
+        'filename': os.environ.get('YOLO_MODEL_FILENAME', 'best.pt'),
         'description': 'YOLOv11 model'
     },
     'herdnet': {
-        'filename': 'herdnet_baseline_model.pth',
+        'filename': os.environ.get('HERDNET_MODEL_FILENAME', 'herdnet_baseline_model.pth'),
         'description': 'HerdNet model'
     }
 }

@@ -98,9 +98,9 @@ swagger_config = {
 
 swagger = Swagger(app, template=swagger_template, config=swagger_config)
 
-# Allowed file extensions
-ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'JPG', 'JPEG', 'gif', 'webp', 'bmp'}
-ALLOWED_ZIP_EXTENSIONS = {'zip'}
+# Allowed file extensions (from environment variables or defaults)
+ALLOWED_IMAGE_EXTENSIONS = set(os.environ.get('ALLOWED_IMAGE_EXTENSIONS', 'png,jpg,jpeg,JPG,JPEG,gif,webp,bmp').split(','))
+ALLOWED_ZIP_EXTENSIONS = set(os.environ.get('ALLOWED_ZIP_EXTENSIONS', 'zip').split(','))
 
 # ========================================
 # Initialize Database and Download Models
@@ -125,7 +125,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 # Load checkpoint
-MODEL_PATH = "./herdnet_baseline_model.pth"
+MODEL_PATH = os.path.join("./", os.environ.get('HERDNET_MODEL_FILENAME', 'herdnet_baseline_model.pth'))
 print(f"Loading checkpoint from {MODEL_PATH}...")
 
 map_location = torch.device('cpu')
@@ -151,26 +151,91 @@ print(f"Normalization - Mean: {img_mean}, Std: {img_std}")
 ANIMAL_CLASSES = {0: "no_animal"}
 ANIMAL_CLASSES.update(classes_dict)
 
-# Spanish translations for animal classes
+# Spanish translations for animal classes with annotation colors
+# Structure: {class_code: {'name': 'Spanish Name', 'color': '#HEX'}}
 SPANISH_NAMES = {
-    'buffalo': 'Búfalo',
-    'elephant': 'Elefante',
-    'kob': 'Kob',
-    'topi': 'Topi',
-    'warthog': 'Jabalí Verrugoso',
-    'waterbuck': 'Antílope Acuático',
-    'no_animal': 'Sin Animal',
-    'species_A': 'Antilope',
-    'species_B': 'Búfalo',
-    'species_E': 'Elefante',
-    'species_K': 'Antilope Africano',
-    'species_WH': 'Jabalí',
-    'species_WB': 'Antílope Acuático'
+    # HerdNet classes
+    'buffalo': {
+        'name': 'Búfalo',
+        'color': '#FF0000'  # Red
+    },
+    'elephant': {
+        'name': 'Elefante',
+        'color': '#00FF00'  # Green
+    },
+    'kob': {
+        'name': 'Kob',
+        'color': '#0000FF'  # Blue
+    },
+    'topi': {
+        'name': 'Topi',
+        'color': '#FFFF00'  # Yellow
+    },
+    'warthog': {
+        'name': 'Jabalí Verrugoso',
+        'color': '#FF00FF'  # Magenta
+    },
+    'waterbuck': {
+        'name': 'Antílope Acuático',
+        'color': '#00FFFF'  # Cyan
+    },
+    'no_animal': {
+        'name': 'Sin Animal',
+        'color': '#808080'  # Gray
+    },
+    # YOLO classes
+    'species_a': {
+        'name': 'Antilope',
+        'color': '#FFA500'  # Orange
+    },
+    'species_b': {
+        'name': 'Búfalo',
+        'color': '#FF0000'  # Red
+    },
+    'species_e': {
+        'name': 'Elefante',
+        'color': '#00FF00'  # Green
+    },
+    'species_k': {
+        'name': 'Antilope Africano',
+        'color': '#800080'  # Purple
+    },
+    'species_wh': {
+        'name': 'Jabalí',
+        'color': '#FF00FF'  # Magenta
+    },
+    'species_wb': {
+        'name': 'Antílope Acuático',
+        'color': '#00FFFF'  # Cyan
+    }
 }
 
 def translate_to_spanish(english_name):
     """Translate animal class name to Spanish."""
-    return SPANISH_NAMES.get(english_name.lower(), english_name)
+    species_data = SPANISH_NAMES.get(english_name.lower(), None)
+    if species_data:
+        return species_data['name']
+    return english_name
+
+def get_species_color(english_name):
+    """Get annotation color for a species."""
+    species_data = SPANISH_NAMES.get(english_name.lower(), None)
+    if species_data:
+        return species_data['color']
+    # Default colors if species not found
+    default_colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080']
+    return default_colors[hash(english_name) % len(default_colors)]
+
+def translate_yolo_classes_dict():
+    """Translate YOLO_CLASSES dictionary from English to Spanish."""
+    if not YOLO_CLASSES:
+        return {}
+    
+    translated_classes = {}
+    for class_id, class_name in YOLO_CLASSES.items():
+        translated_classes[class_id] = translate_to_spanish(class_name)
+    
+    return translated_classes
 
 def translate_results_to_spanish(results):
     """
@@ -223,7 +288,7 @@ print("\nLoading YOLOv11 model...")
 try:
     from ultralytics import YOLO
     
-    YOLO_MODEL_PATH = "./best.pt"
+    YOLO_MODEL_PATH = os.path.join("./", os.environ.get('YOLO_MODEL_FILENAME', 'best.pt'))
     yolo_model = YOLO(YOLO_MODEL_PATH)
     yolo_model.to(device)
     
@@ -318,8 +383,11 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
                     confidence = float(box.conf[0])
                     bbox = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
                     
-                    # Get class name (keep in English during processing)
-                    class_name = SPANISH_NAMES.get(YOLO_CLASSES.get(class_id, f"class_{class_id}"))
+                    # Get class name in English first
+                    english_class_name = YOLO_CLASSES.get(class_id, f"class_{class_id}")
+                    
+                    # Get Spanish name
+                    class_name = translate_to_spanish(english_class_name)
                     
                     # Update species counts
                     species_counts[class_name] = species_counts.get(class_name, 0) + 1
@@ -346,13 +414,8 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
                     
                     # Draw bounding box on the image
                     if include_annotated_images:
-                        # Define color based on class (you can customize this)
-                        colors = [
-                            '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
-                            '#FF00FF', '#00FFFF', '#FFA500', '#800080',
-                            '#FFC0CB', '#A52A2A'
-                        ]
-                        color = colors[class_id % len(colors)]
+                        # Get color for this species
+                        color = get_species_color(english_class_name)
                         
                         # Draw rectangle
                         line_width = max(2, int(min(original_img.width, original_img.height) * 0.003))
@@ -770,20 +833,25 @@ def health():
                     classes:
                       type: object
     """
+    # Translate ANIMAL_CLASSES to Spanish
+    translated_animal_classes = {}
+    for class_id, class_name in ANIMAL_CLASSES.items():
+        translated_animal_classes[class_id] = translate_to_spanish(class_name)
+    
     return jsonify({
         'status': 'healthy',
         'models': {
             'herdnet': {
                 'loaded': True,
-                'device': str(device),
-                'num_classes': num_classes,
-                'classes': ANIMAL_CLASSES
+        'device': str(device),
+        'num_classes': num_classes,
+                'classes': translated_animal_classes
             },
             'yolov11': {
                 'loaded': yolo_loaded,
                 'device': str(device),
                 'num_classes': len(YOLO_CLASSES) if yolo_loaded else 0,
-                'classes': YOLO_CLASSES if yolo_loaded else {}
+                'classes': translate_yolo_classes_dict() if yolo_loaded else {}
             }
         }
     }), 200
@@ -973,7 +1041,7 @@ def analyze_yolo_endpoint():
                 'task_id': task_id,
                 'message': 'Images analyzed successfully with YOLOv11',
                 'model': 'YOLOv11',
-                'classes': YOLO_CLASSES,
+                'classes': translate_yolo_classes_dict(),
                 'summary': results['summary'],
                 'detections': results['detections'],
                 'processing_params': results['processing_params'],
@@ -1068,18 +1136,23 @@ def models_info():
                     num_classes:
                       type: integer
     """
+    # Translate ANIMAL_CLASSES to Spanish
+    translated_animal_classes = {}
+    for class_id, class_name in ANIMAL_CLASSES.items():
+        translated_animal_classes[class_id] = translate_to_spanish(class_name)
+    
     return jsonify({
         'models': {
             'herdnet': {
                 'loaded': True,
                 'endpoint': '/analyze-image',
-                'classes': ANIMAL_CLASSES,
+                'classes': translated_animal_classes,
                 'num_classes': num_classes
             },
             'yolov11': {
                 'loaded': yolo_loaded,
                 'endpoint': '/analyze-yolo',
-                'classes': YOLO_CLASSES if yolo_loaded else {},
+                'classes': translate_yolo_classes_dict() if yolo_loaded else {},
                 'num_classes': len(YOLO_CLASSES) if yolo_loaded else 0
             }
         }

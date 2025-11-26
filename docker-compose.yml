@@ -12,6 +12,13 @@ services:
     environment:
       - FLASK_APP=app.py
       - PYTHONUNBUFFERED=1
+      # Model configuration (optional - defaults are provided)
+      - GDRIVE_FOLDER_ID=${GDRIVE_FOLDER_ID:-1BMy6W7_3JhSA6uSEzze48ZR22qJv4s2RRR}
+      - YOLO_MODEL_FILENAME=${YOLO_MODEL_FILENAME:-best2.pt}
+      - HERDNET_MODEL_FILENAME=${HERDNET_MODEL_FILENAME:-herdnet_baseline_model2.pth}
+      # File upload configuration (optional - defaults are provided)
+      - ALLOWED_IMAGE_EXTENSIONS=${ALLOWED_IMAGE_EXTENSIONS:-png,jpg,jpeg,JPG,JPEG,gif,webp,bmp}
+      - ALLOWED_ZIP_EXTENSIONS=${ALLOWED_ZIP_EXTENSIONS:-zip}
     volumes:
       # Optional: Mount directories for persistent data
       - ./uploads:/app/uploads
