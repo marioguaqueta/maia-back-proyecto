@@ -49,6 +49,12 @@ YOLO_IMG_SIZES = [int(x) for x in os.getenv("YOLO_IMG_SIZES", "416,480,640,800,9
 YOLO_IMG_SIZE_DEFAULT_INDEX = int(os.getenv("YOLO_IMG_SIZE_DEFAULT_INDEX", "2"))
 
 # ========================================
+# Model Availability Configuration
+# ========================================
+# Enable/Disable HerdNet model in UI
+ENABLE_HERDNET = os.getenv("ENABLE_HERDNET", "true").lower() in ("true", "1", "yes", "on")
+
+# ========================================
 # HerdNet UI Configuration
 # ========================================
 # Patch Size Options
@@ -247,8 +253,12 @@ def new_analysis_page():
         with col2:
             models_info = health.get('models', {})
             yolo_status = "✓ Cargado" if models_info.get('yolov11', {}).get('loaded') else "✗ No cargado"
-            herdnet_status = "✓ Cargado" if models_info.get('herdnet', {}).get('loaded') else "✗ No cargado"
-            st.info(f"YOLOv11: {yolo_status} | HerdNet: {herdnet_status}")
+            
+            if ENABLE_HERDNET:
+                herdnet_status = "✓ Cargado" if models_info.get('herdnet', {}).get('loaded') else "✗ No cargado"
+                st.info(f"YOLOv11: {yolo_status} | HerdNet: {herdnet_status}")
+            else:
+                st.info(f"YOLOv11: {yolo_status}")
     except:
         st.error(f"❌ No se puede conectar con el servicio. Por favor, contacta al administrador de la plataforma para resolver el problema al correo {ADMIN_EMAIL}.")
         return
@@ -305,10 +315,22 @@ def new_analysis_page():
     
     # Selección de modelo
     st.subheader("🤖 Selección de Modelo")
+    
+    # Build model options based on availability
+    model_options = ["YOLOv11 (Cajas Delimitadoras)"]
+    if ENABLE_HERDNET:
+        model_options.append("HerdNet (Detección por Puntos)")
+    
+    # Show appropriate help text
+    if ENABLE_HERDNET:
+        help_text = "YOLOv11: Detección rápida con cajas delimitadoras | HerdNet: Optimizado para imágenes aéreas con detección por puntos"
+    else:
+        help_text = "YOLOv11: Detección rápida con cajas delimitadoras. Modelo optimizado para identificación de fauna silvestre."
+    
     model_choice = st.radio(
         "Elige el modelo de detección:",
-        ["YOLOv11 (Cajas Delimitadoras)", "HerdNet (Detección por Puntos)"],
-        help="YOLOv11: Detección rápida con cajas delimitadoras | HerdNet: Optimizado para imágenes aéreas con detección por puntos"
+        model_options,
+        help=help_text
     )
     
     # Parámetros según el modelo
@@ -887,7 +909,8 @@ def about_page():
     """Página acerca de con información de modelos."""
     st.header("ℹ️ Acerca de")
     
-    st.markdown("""
+    # Build models section dynamically based on availability
+    models_section = """
     ## Sistema de Detección de Fauna Africana
     
     Este sistema utiliza modelos de aprendizaje profundo de última generación para detectar y contar fauna africana en imágenes aéreas y satelitales.
@@ -899,13 +922,18 @@ def about_page():
     - **Velocidad:** Rápido (1-2 segundos por imagen)
     - **Mejor para:** Imágenes estándar, detección en tiempo real
     - **Salida:** Cajas delimitadoras alrededor de los animales
+    """
     
+    if ENABLE_HERDNET:
+        models_section += """
     #### 📍 HerdNet
     - **Tipo:** Detección basada en puntos
     - **Velocidad:** Moderada (depende del tamaño de la imagen)
     - **Mejor para:** Imágenes aéreas/satelitales grandes
     - **Salida:** Puntos centrales, miniaturas y gráficos
+    """
     
+    models_section += """
     ### Especies Soportadas
     1. Búfalo (*Syncerus caffer*)
     2. Elefante (*Loxodonta africana*)
@@ -915,14 +943,20 @@ def about_page():
     6. Antílope Acuático (*Kobus ellipsiprymnus*)
     
     ### Citas
+    """
     
+    # Add HerdNet citation if enabled
+    if ENABLE_HERDNET:
+        models_section += """
     **HerdNet:**
     ```
     Delplanque, A., Foucher, S., Lejeune, P., Linchant, J., & Théau, J. (2022).
     Multispecies detection and identification of African mammals in aerial imagery 
     using convolutional neural networks. Remote Sensing in Ecology and Conservation, 8(2), 166-179.
     ```
+    """
     
+    models_section += """
     **YOLOv11:**
     ```
     Ultralytics YOLOv11 (2024)
@@ -940,7 +974,9 @@ def about_page():
     **Versión:** 1.0.0  
     **Última Actualización:** Noviembre 2025  
     **Estado:** Producción
-    """)
+    """
+    
+    st.markdown(models_section)
 
 
 if __name__ == "__main__":
