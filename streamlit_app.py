@@ -917,7 +917,7 @@ def about_page():
     
     ### Modelos
     
-    #### 🎯 YOLOv11s con postentrenamiento para detección de imágenes aéreas con fauna africana 
+    #### 🎯 YOLOv11s con ajuste específico para detección de imágenes aéreas con fauna africana 
     - **Tipo:** Detección de objetos con cajas delimitadoras
     - **Velocidad:** Rápido (1-2 segundos por imagen)
     - **Mejor para:** Imágenes aéreas, detección en tiempo real
