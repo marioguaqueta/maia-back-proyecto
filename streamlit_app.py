@@ -226,7 +226,7 @@ def new_analysis_page():
     # File uploader según el tipo
     if "ZIP" in upload_type:
         uploaded_file = st.file_uploader(
-            f"📦 Selecciona tu archivo ZIP, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí. Máximo tamaño {max_mb}MB",
+            f"📦 Selecciona tu archivo ZIP, da click en el botón 'Examinar archivos' para seleccionar el archivo o arrastra y suelta el archivo aquí. Máximo tamaño {max_mb}MB",
             type=['zip'],
             help="El archivo ZIP debe contener imágenes de fauna silvestre en formato JPG, PNG o JPEG. Puedes incluir múltiples imágenes para procesamiento por lotes.",
             label_visibility="visible",
@@ -235,7 +235,7 @@ def new_analysis_page():
         file_type = 'zip'
     else:
         uploaded_file = st.file_uploader(
-            f"🖼️ Selecciona tu imagen, da click en el botón 'Browse files' para seleccionar el archivo o arrastra y suelta el archivo aquí. Máximo tamaño {max_mb}MB",
+            f"🖼️ Selecciona tu imagen, da click en el botón 'Examinar archivos' para seleccionar el archivo o arrastra y suelta el archivo aquí. Máximo tamaño {max_mb}MB",
             type=['png', 'jpg', 'jpeg'],
             help="Formatos soportados: PNG, JPG, JPEG. La imagen será analizada para detectar fauna silvestre.",
             label_visibility="visible",
