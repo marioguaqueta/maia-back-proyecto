@@ -112,34 +112,53 @@ st.markdown("""
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Traducción del widget de carga de archivos a español */
-[data-testid="stFileUploader"] section > button {
-    /* Ocultar el texto original "Browse files" */
-    font-size: 0;
+
+/* ============================================
+   BOTÓN: Reemplazar “Browse files”
+   ============================================ */
+
+/* Oculta el texto original del botón */
+[data-testid="stFileUploader"] [data-testid="stBaseButton-secondary"] {
+    font-size: 0 !important;
 }
 
-[data-testid="stFileUploader"] section > button::after {
-    /* Añadir texto en español */
-    content: "Examinar archivos";
-    font-size: 14px;
-    font-weight: 400;
+/* Inserta texto nuevo */
+[data-testid="stFileUploader"] [data-testid="stBaseButton-secondary"]::after {
+    content: "Examinar archivos" !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
 }
 
-/* Cambiar el texto de "Drag and drop file here" */
-[data-testid="stFileUploader"] section > div[data-testid="stFileUploaderDropzone"] > div > span {
-    font-size: 0;
+/* ============================================
+   TEXTO: “Drag and drop file here”
+   ============================================ */
+
+/* Oculta texto original */
+[data-testid="stFileUploaderDropzoneInstructions"] span:first-of-type {
+    font-size: 0 !important;
 }
 
-[data-testid="stFileUploader"] section > div[data-testid="stFileUploaderDropzone"] > div > span::after {
-    content: "Arrastra y suelta el archivo aquí";
-    font-size: 14px;
+/* Inserta nueva traducción */
+[data-testid="stFileUploaderDropzoneInstructions"] span:first-of-type::after {
+    content: "Arrastra y suelta el archivo aquí" !important;
+    font-size: 14px !important;
 }
 
-/* Cambiar "Limit XMB per file" */
-[data-testid="stFileUploader"] small {
-    font-size: 0;
+/* ============================================
+   TEXTO: “Limit XMB per file • ZIP”
+   ============================================ */
+
+/* Ocultar texto original */
+[data-testid="stFileUploaderDropzoneInstructions"] span:last-of-type {
+    font-size: 0 !important;
 }
 
+/* Insertar traducción */
+[data-testid="stFileUploaderDropzoneInstructions"] span:last-of-type::after {
+    content: "Límite 100MB por archivo • ZIP" !important;
+    font-size: 12px !important;
+    opacity: 0.85;
+}
 
 </style>
 """, unsafe_allow_html=True)
