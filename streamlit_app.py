@@ -20,10 +20,52 @@ API_BASE_URL = os.getenv(
     st.secrets.get("API_BASE_URL", "http://localhost:8000")
 )
 
-ADMIN_EMAIL= os.getenv(
+ADMIN_EMAIL = os.getenv(
     "ADMIN_EMAIL",
     st.secrets.get("ADMIN_EMAIL", "info@grupo12.yolomodel.com")
 )
+
+# ========================================
+# YOLOv11 UI Configuration
+# ========================================
+# Confidence Threshold Slider
+YOLO_CONF_MIN = float(os.getenv("YOLO_CONF_MIN", "0.1"))
+YOLO_CONF_MAX = float(os.getenv("YOLO_CONF_MAX", "0.9"))
+YOLO_CONF_DEFAULT = float(os.getenv("YOLO_CONF_DEFAULT", "0.25"))
+YOLO_CONF_STEP = float(os.getenv("YOLO_CONF_STEP", "0.05"))
+
+# IOU Threshold Slider
+YOLO_IOU_MIN = float(os.getenv("YOLO_IOU_MIN", "0.1"))
+YOLO_IOU_MAX = float(os.getenv("YOLO_IOU_MAX", "0.9"))
+YOLO_IOU_DEFAULT = float(os.getenv("YOLO_IOU_DEFAULT", "0.45"))
+YOLO_IOU_STEP = float(os.getenv("YOLO_IOU_STEP", "0.05"))
+
+# Image Size Options
+YOLO_IMG_SIZES = [int(x) for x in os.getenv("YOLO_IMG_SIZES", "416,480,640,800,960,1280,2560,5120,10240").split(",")]
+YOLO_IMG_SIZE_DEFAULT_INDEX = int(os.getenv("YOLO_IMG_SIZE_DEFAULT_INDEX", "2"))
+
+# ========================================
+# HerdNet UI Configuration
+# ========================================
+# Patch Size Options
+HERDNET_PATCH_SIZES = [int(x) for x in os.getenv("HERDNET_PATCH_SIZES", "384,512,768,1024,2048,4096,8192,16384").split(",")]
+HERDNET_PATCH_SIZE_DEFAULT_INDEX = int(os.getenv("HERDNET_PATCH_SIZE_DEFAULT_INDEX", "1"))
+
+# Rotation Options
+HERDNET_ROTATION_OPTIONS = [int(x) for x in os.getenv("HERDNET_ROTATION_OPTIONS", "0,1,2,3").split(",")]
+HERDNET_ROTATION_DEFAULT_INDEX = int(os.getenv("HERDNET_ROTATION_DEFAULT_INDEX", "0"))
+
+# Overlap Slider
+HERDNET_OVERLAP_MIN = int(os.getenv("HERDNET_OVERLAP_MIN", "0"))
+HERDNET_OVERLAP_MAX = int(os.getenv("HERDNET_OVERLAP_MAX", "300"))
+HERDNET_OVERLAP_DEFAULT = int(os.getenv("HERDNET_OVERLAP_DEFAULT", "160"))
+HERDNET_OVERLAP_STEP = int(os.getenv("HERDNET_OVERLAP_STEP", "16"))
+
+# Thumbnail Size Slider
+HERDNET_THUMBNAIL_MIN = int(os.getenv("HERDNET_THUMBNAIL_MIN", "128"))
+HERDNET_THUMBNAIL_MAX = int(os.getenv("HERDNET_THUMBNAIL_MAX", "512"))
+HERDNET_THUMBNAIL_DEFAULT = int(os.getenv("HERDNET_THUMBNAIL_DEFAULT", "256"))
+HERDNET_THUMBNAIL_STEP = int(os.getenv("HERDNET_THUMBNAIL_STEP", "32"))
 
 # Configuración de página
 st.set_page_config(
@@ -254,22 +296,58 @@ def new_analysis_page():
     if "YOLO" in model_choice:
         col1, col2, col3 = st.columns(3)
         with col1:
-            conf_threshold = st.slider("Umbral de Confianza", 0.1, 0.9, 0.25, 0.05)
+            conf_threshold = st.slider(
+                "Umbral de Confianza", 
+                YOLO_CONF_MIN, 
+                YOLO_CONF_MAX, 
+                YOLO_CONF_DEFAULT, 
+                YOLO_CONF_STEP
+            )
         with col2:
-            iou_threshold = st.slider("Umbral de Coincidencia (IOU) ", 0.1, 0.9, 0.45, 0.05)
+            iou_threshold = st.slider(
+                "Umbral de Coincidencia (IOU)", 
+                YOLO_IOU_MIN, 
+                YOLO_IOU_MAX, 
+                YOLO_IOU_DEFAULT, 
+                YOLO_IOU_STEP
+            )
         with col3:
-            img_size = st.selectbox("Tamaño de Imagen", [416, 480, 640, 800, 960, 1280, 2560, 5120, 10240], index=2)
+            img_size = st.selectbox(
+                "Tamaño de Imagen", 
+                YOLO_IMG_SIZES, 
+                index=YOLO_IMG_SIZE_DEFAULT_INDEX
+            )
         
         include_annotated = True
         
     else:  # HerdNet
         col1, col2 = st.columns(2)
         with col1:
-            patch_size = st.selectbox("Tamaño de Parche", [384, 512, 768, 1024, 2048, 4096, 8192, 16384], index=1)
-            rotation = st.selectbox("Rotación (pasos de 90°)", [0, 1, 2, 3], index=0)
+            patch_size = st.selectbox(
+                "Tamaño de Parche", 
+                HERDNET_PATCH_SIZES, 
+                index=HERDNET_PATCH_SIZE_DEFAULT_INDEX
+            )
+            rotation = st.selectbox(
+                "Rotación (pasos de 90°)", 
+                HERDNET_ROTATION_OPTIONS, 
+                index=HERDNET_ROTATION_DEFAULT_INDEX
+            )
         with col2:
-            overlap = st.slider("Superposición (píxeles)", 0, 300, 160, 16)
-            thumbnail_size = st.slider("Tamaño de Miniatura", 128, 512, 256, 32)
+            overlap = st.slider(
+                "Superposición (píxeles)", 
+                HERDNET_OVERLAP_MIN, 
+                HERDNET_OVERLAP_MAX, 
+                HERDNET_OVERLAP_DEFAULT, 
+                HERDNET_OVERLAP_STEP
+            )
+            thumbnail_size = st.slider(
+                "Tamaño de Miniatura", 
+                HERDNET_THUMBNAIL_MIN, 
+                HERDNET_THUMBNAIL_MAX, 
+                HERDNET_THUMBNAIL_DEFAULT, 
+                HERDNET_THUMBNAIL_STEP
+            )
         
         col3, col4 = st.columns(2)
         with col3:

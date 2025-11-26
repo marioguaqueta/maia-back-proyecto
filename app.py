@@ -99,8 +99,13 @@ swagger_config = {
 swagger = Swagger(app, template=swagger_template, config=swagger_config)
 
 # Allowed file extensions (from environment variables or defaults)
-ALLOWED_IMAGE_EXTENSIONS = set(os.environ.get('ALLOWED_IMAGE_EXTENSIONS', 'png,jpg,jpeg,JPG,JPEG,gif,webp,bmp').split(','))
-ALLOWED_ZIP_EXTENSIONS = set(os.environ.get('ALLOWED_ZIP_EXTENSIONS', 'zip').split(','))
+# Strip whitespace and convert to lowercase for consistent comparison
+ALLOWED_IMAGE_EXTENSIONS = set(ext.strip().lower() for ext in os.environ.get('ALLOWED_IMAGE_EXTENSIONS', 'png,jpg,jpeg,JPG,JPEG,gif,webp,bmp').split(','))
+ALLOWED_ZIP_EXTENSIONS = set(ext.strip().lower() for ext in os.environ.get('ALLOWED_ZIP_EXTENSIONS', 'zip').split(','))
+
+# Create tuples for endswith() checks (include both lowercase and uppercase)
+ALLOWED_IMAGE_EXTENSIONS_TUPLE = tuple(f'.{ext}' for ext in ALLOWED_IMAGE_EXTENSIONS) + tuple(f'.{ext.upper()}' for ext in ALLOWED_IMAGE_EXTENSIONS)
+ALLOWED_ZIP_EXTENSIONS_TUPLE = tuple(f'.{ext}' for ext in ALLOWED_ZIP_EXTENSIONS) + tuple(f'.{ext.upper()}' for ext in ALLOWED_ZIP_EXTENSIONS)
 
 # ========================================
 # Initialize Database and Download Models
@@ -108,6 +113,9 @@ ALLOWED_ZIP_EXTENSIONS = set(os.environ.get('ALLOWED_ZIP_EXTENSIONS', 'zip').spl
 print("\n" + "="*60)
 print("🚀 Starting Wildlife Detection API")
 print("="*60)
+print(f"\n📁 File Upload Configuration:")
+print(f"  Allowed Image Extensions: {sorted(ALLOWED_IMAGE_EXTENSIONS)}")
+print(f"  Allowed ZIP Extensions: {sorted(ALLOWED_ZIP_EXTENSIONS)}")
 
 # Initialize database
 init_database()
@@ -324,7 +332,7 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
     
     # Get all image files
     img_names = [i for i in os.listdir(image_dir) 
-                 if i.endswith(('.JPG', '.jpg', '.JPEG', '.jpeg', '.png', '.PNG', '.bmp', '.webp'))]
+                 if i.endswith(ALLOWED_IMAGE_EXTENSIONS_TUPLE)]
     
     if not img_names:
         raise Exception("No images found in the uploaded zip file")
@@ -528,7 +536,7 @@ def analyze_images_with_yolo(image_dir, conf_threshold=0.25, iou_threshold=0.45,
 
 def allowed_image(filename):
     """Check if the file is an allowed image type"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
 
 def allowed_zip(filename):
@@ -560,7 +568,7 @@ def analyze_images_with_evaluator(image_dir, patch_size=512, overlap=160, rotati
     
     # Prepare dataset
     img_names = [i for i in os.listdir(image_dir) 
-                 if i.endswith(('.JPG', '.jpg', '.JPEG', '.jpeg', '.png', '.PNG'))]
+                 if i.endswith(ALLOWED_IMAGE_EXTENSIONS_TUPLE)]
     
     if not img_names:
         raise Exception("No images found in the uploaded zip file")
