@@ -247,7 +247,7 @@ def main():
     # Navegación en la barra lateral
     page = st.sidebar.selectbox(
         "Navegación",
-        ["🎯 Nuevo Análisis", "📊 Ver Resultados", "📈 Estadísticas", "ℹ️ Acerca de"]
+        ["🎯 Nuevo Análisis", "📊 Ver Resultados", "📈 Estadísticas", "📚 Ayuda", "ℹ️ Acerca de"]
     )
     
     if page == "🎯 Nuevo Análisis":
