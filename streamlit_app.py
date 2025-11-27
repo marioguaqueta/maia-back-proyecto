@@ -14,6 +14,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import toml
+import numpy as np
 
 config = toml.load(".streamlit/config.toml")
 max_mb = config["server"]["maxUploadSize"]
@@ -81,13 +82,12 @@ HERDNET_THUMBNAIL_STEP = int(os.getenv("HERDNET_THUMBNAIL_STEP", "32"))
 # Image Zoom Configuration
 # ========================================
 # Zoom Control Parameters
-ZOOM_MIN = int(os.getenv("ZOOM_MIN", "50"))
-ZOOM_MAX = int(os.getenv("ZOOM_MAX", "200"))
-ZOOM_DEFAULT = int(os.getenv("ZOOM_DEFAULT", "100"))
-ZOOM_STEP = int(os.getenv("ZOOM_STEP", "10"))
-
-# Quick Zoom Buttons (comma-separated percentages)
-ZOOM_QUICK_LEVELS = [int(x) for x in os.getenv("ZOOM_QUICK_LEVELS", "50,75,100,150,200").split(",")]
+# Image Zoom Configuration
+# -------------------------
+# Zoom is now handled by Plotly's built-in interactive controls
+# No environment variables needed - users can zoom with mouse wheel, pan with drag,
+# and double-click to reset. Plotly provides native zoom/pan controls.
+# Previous slider-based zoom has been replaced with Plotly's superior interactive zoom.
 
 # Configuración de página
 st.set_page_config(
@@ -516,7 +516,7 @@ def create_detections_table(result, model_choice):
 
 @st.dialog("Visor de Imagen con Zoom", width="large")
 def show_image_modal(img_data, img_name, model_type):
-    """Mostrar imagen en un modal con capacidades de zoom y panorámica."""
+    """Mostrar imagen en un modal con capacidades de zoom interactivo usando Plotly."""
     st.subheader(f"📷 {img_name}")
     
     # Decodificar imagen
@@ -534,44 +534,43 @@ def show_image_modal(img_data, img_name, model_type):
     width, height = img.size
     st.caption(f"Tamaño original: {width} × {height} píxeles")
     
-    # Controles de zoom
-    st.markdown("---")
+    # Instrucciones de zoom interactivo
+    st.info("🔍 **Controles interactivos:** Usa la rueda del ratón para zoom, arrastra para desplazar, doble clic para resetear")
     
-    zoom_col1, zoom_col2 = st.columns([3, 2])
+    # Convertir a array numpy para Plotly
+    img_array = np.array(img)
     
-    with zoom_col1:
-        zoom_level = st.slider(
-            "🔍 Nivel de Zoom",
-            min_value=ZOOM_MIN,
-            max_value=ZOOM_MAX,
-            value=ZOOM_DEFAULT,
-            step=ZOOM_STEP,
-            format="%d%%",
-            key=f"zoom_slider_modal_{img_name}"
-        )
+    # Crear figura Plotly con zoom interactivo
+    fig = go.Figure()
+    fig.add_trace(go.Image(z=img_array))
     
-    with zoom_col2:
-        st.markdown("**Zoom Rápido:**")
-        cols = st.columns(len(ZOOM_QUICK_LEVELS))
-        for idx, level in enumerate(ZOOM_QUICK_LEVELS):
-            with cols[idx]:
-                if st.button(f"{level}%", key=f"zoom_btn_modal_{img_name}_{level}", use_container_width=True):
-                    st.session_state[f"zoom_slider_modal_{img_name}"] = level
-                    st.rerun()
+    # Configurar layout para zoom interactivo
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=0, b=0),
+        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+        yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+        dragmode='pan',
+        hovermode=False,
+        height=700
+    )
     
-    # Use the zoom level from session state if button was clicked
-    if f"zoom_slider_modal_{img_name}" in st.session_state:
-        zoom_level = st.session_state[f"zoom_slider_modal_{img_name}"]
+    # Configurar para permitir zoom y pan
+    config = {
+        'scrollZoom': True,
+        'displayModeBar': True,
+        'displaylogo': False,
+        'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
+        'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+        'toImageButtonOptions': {
+            'format': 'png',
+            'filename': img_name,
+            'height': height,
+            'width': width,
+            'scale': 1
+        }
+    }
     
-    # Calcular nuevas dimensiones según el zoom
-    new_width = int(width * zoom_level / 100)
-    new_height = int(height * zoom_level / 100)
-    
-    if zoom_level != 100:
-        img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        st.image(img_resized, use_column_width=False)
-    else:
-        st.image(img, use_column_width=True)
+    st.plotly_chart(fig, use_container_width=True, config=config)
     
     # Botón de descarga
     st.markdown("---")
@@ -588,7 +587,7 @@ def show_image_modal(img_data, img_name, model_type):
 
 def render_yolo_image_card(img_data, all_detections, img_idx):
     """
-    Renderiza una tarjeta de imagen con detecciones YOLO.
+    Renderiza una tarjeta de imagen con detecciones YOLO usando Plotly para zoom interactivo.
     Función recursiva que maneja cada imagen individualmente.
     """
     # Crear contenedor de tarjeta
@@ -604,35 +603,8 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
         </div>
         """, unsafe_allow_html=True)
         
-        # Control de zoom con botones rápidos
-        zoom_col1, zoom_col2 = st.columns([3, 1])
-        
-        with zoom_col1:
-            zoom_level = st.slider(
-                "🔍 Nivel de Zoom",
-                min_value=ZOOM_MIN,
-                max_value=ZOOM_MAX,
-                value=ZOOM_DEFAULT,
-                step=ZOOM_STEP,
-                format="%d%%",
-                key=f"zoom_slider_yolo_{img_idx}_{img_data['image_name']}",
-                help="Ajusta el tamaño de visualización de las imágenes"
-            )
-        
-        with zoom_col2:
-            st.markdown("**Rápido:**")
-            # Create buttons for quick zoom levels
-            cols = st.columns(len(ZOOM_QUICK_LEVELS))
-            for idx, level in enumerate(ZOOM_QUICK_LEVELS):
-                with cols[idx]:
-                    if st.button(f"{level}%", key=f"zoom_btn_yolo_{img_idx}_{img_data['image_name']}_{level}", use_container_width=True):
-                        # Update session state to change slider value
-                        st.session_state[f"zoom_slider_yolo_{img_idx}_{img_data['image_name']}"] = level
-                        st.rerun()
-        
-        # Use the zoom level from session state if button was clicked
-        if f"zoom_slider_yolo_{img_idx}_{img_data['image_name']}" in st.session_state:
-            zoom_level = st.session_state[f"zoom_slider_yolo_{img_idx}_{img_data['image_name']}"]
+        # Instrucciones de zoom interactivo
+        st.info("🔍 **Controles interactivos:** Usa la rueda del ratón para zoom, arrastra para desplazar, doble clic para resetear")
         
         # Mostrar imágenes lado a lado
         col1, col2 = st.columns(2)
@@ -644,20 +616,41 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
                 original_bytes = base64.b64decode(img_data['original_image_base64'])
                 original_img = Image.open(BytesIO(original_bytes))
                 
-                # Aplicar zoom si es diferente de 100%
-                if zoom_level != 100:
-                    orig_width, orig_height = original_img.size
-                    new_width = int(orig_width * zoom_level / 100)
-                    new_height = int(orig_height * zoom_level / 100)
-                    original_img = original_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                # Convertir a array numpy para Plotly
+                img_array = np.array(original_img)
                 
-                st.markdown('<div class="image-container">', unsafe_allow_html=True)
-                st.image(original_img, use_column_width=(zoom_level == 100))
-                st.markdown('</div>', unsafe_allow_html=True)
+                # Crear figura Plotly con zoom interactivo
+                fig = go.Figure()
+                fig.add_trace(go.Image(z=img_array))
                 
-                # Mostrar dimensiones
-                if zoom_level != 100:
-                    st.caption(f"Tamaño ajustado: {original_img.width} × {original_img.height} px")
+                # Configurar layout para zoom interactivo
+                fig.update_layout(
+                    margin=dict(l=0, r=0, t=0, b=0),
+                    xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                    yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                    dragmode='pan',
+                    hovermode=False,
+                    height=500
+                )
+                
+                # Configurar para permitir zoom y pan
+                config = {
+                    'scrollZoom': True,
+                    'displayModeBar': True,
+                    'displaylogo': False,
+                    'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
+                    'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+                    'toImageButtonOptions': {
+                        'format': 'png',
+                        'filename': f'original_{img_data["image_name"]}',
+                        'height': original_img.height,
+                        'width': original_img.width,
+                        'scale': 1
+                    }
+                }
+                
+                st.plotly_chart(fig, use_container_width=True, config=config)
+                st.caption(f"📐 Dimensiones: {original_img.width} × {original_img.height} px")
             else:
                 st.info("Imagen original no disponible")
         
@@ -667,20 +660,41 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
             img_bytes = base64.b64decode(img_data['annotated_image_base64'])
             img = Image.open(BytesIO(img_bytes))
             
-            # Aplicar zoom si es diferente de 100%
-            if zoom_level != 100:
-                img_width, img_height = img.size
-                new_width = int(img_width * zoom_level / 100)
-                new_height = int(img_height * zoom_level / 100)
-                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            # Convertir a array numpy para Plotly
+            img_array = np.array(img)
             
-            st.markdown('<div class="image-container">', unsafe_allow_html=True)
-            st.image(img, use_column_width=(zoom_level == 100))
-            st.markdown('</div>', unsafe_allow_html=True)
+            # Crear figura Plotly con zoom interactivo
+            fig = go.Figure()
+            fig.add_trace(go.Image(z=img_array))
             
-            # Mostrar dimensiones
-            if zoom_level != 100:
-                st.caption(f"Tamaño ajustado: {img.width} × {img.height} px")
+            # Configurar layout para zoom interactivo
+            fig.update_layout(
+                margin=dict(l=0, r=0, t=0, b=0),
+                xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                dragmode='pan',
+                hovermode=False,
+                height=500
+            )
+            
+            # Configurar para permitir zoom y pan
+            config = {
+                'scrollZoom': True,
+                'displayModeBar': True,
+                'displaylogo': False,
+                'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
+                'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+                'toImageButtonOptions': {
+                    'format': 'png',
+                    'filename': f'annotated_{img_data["image_name"]}',
+                    'height': img.height,
+                    'width': img.width,
+                    'scale': 1
+                }
+            }
+            
+            st.plotly_chart(fig, use_container_width=True, config=config)
+            st.caption(f"📐 Dimensiones: {img.width} × {img.height} px")
         
         # Obtener detecciones para esta imagen
         image_detections = [d for d in all_detections if d.get('image') == img_data['image_name']]
@@ -710,7 +724,7 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
 
 def render_herdnet_image_card(plot_data, all_detections, plot_idx):
     """
-    Renderiza una tarjeta de gráfico con detecciones HerdNet.
+    Renderiza una tarjeta de gráfico con detecciones HerdNet usando Plotly para zoom interactivo.
     Función recursiva que maneja cada gráfico individualmente.
     """
     # Crear contenedor de tarjeta
@@ -726,35 +740,8 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
         </div>
         """, unsafe_allow_html=True)
         
-        # Control de zoom con botones rápidos
-        zoom_col1, zoom_col2 = st.columns([3, 1])
-        
-        with zoom_col1:
-            zoom_level = st.slider(
-                "🔍 Nivel de Zoom",
-                min_value=ZOOM_MIN,
-                max_value=ZOOM_MAX,
-                value=ZOOM_DEFAULT,
-                step=ZOOM_STEP,
-                format="%d%%",
-                key=f"zoom_slider_herdnet_{plot_idx}_{plot_data['image_name']}",
-                help="Ajusta el tamaño de visualización de las imágenes"
-            )
-        
-        with zoom_col2:
-            st.markdown("**Rápido:**")
-            # Create buttons for quick zoom levels
-            cols = st.columns(len(ZOOM_QUICK_LEVELS))
-            for idx, level in enumerate(ZOOM_QUICK_LEVELS):
-                with cols[idx]:
-                    if st.button(f"{level}%", key=f"zoom_btn_herdnet_{plot_idx}_{plot_data['image_name']}_{level}", use_container_width=True):
-                        # Update session state to change slider value
-                        st.session_state[f"zoom_slider_herdnet_{plot_idx}_{plot_data['image_name']}"] = level
-                        st.rerun()
-        
-        # Use the zoom level from session state if button was clicked
-        if f"zoom_slider_herdnet_{plot_idx}_{plot_data['image_name']}" in st.session_state:
-            zoom_level = st.session_state[f"zoom_slider_herdnet_{plot_idx}_{plot_data['image_name']}"]
+        # Instrucciones de zoom interactivo
+        st.info("🔍 **Controles interactivos:** Usa la rueda del ratón para zoom, arrastra para desplazar, doble clic para resetear")
         
         # Mostrar imágenes lado a lado
         col1, col2 = st.columns(2)
@@ -766,20 +753,41 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
                 original_bytes = base64.b64decode(plot_data['original_image_base64'])
                 original_img = Image.open(BytesIO(original_bytes))
                 
-                # Aplicar zoom si es diferente de 100%
-                if zoom_level != 100:
-                    orig_width, orig_height = original_img.size
-                    new_width = int(orig_width * zoom_level / 100)
-                    new_height = int(orig_height * zoom_level / 100)
-                    original_img = original_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                # Convertir a array numpy para Plotly
+                img_array = np.array(original_img)
                 
-                st.markdown('<div class="image-container">', unsafe_allow_html=True)
-                st.image(original_img, use_column_width=(zoom_level == 100))
-                st.markdown('</div>', unsafe_allow_html=True)
+                # Crear figura Plotly con zoom interactivo
+                fig = go.Figure()
+                fig.add_trace(go.Image(z=img_array))
                 
-                # Mostrar dimensiones
-                if zoom_level != 100:
-                    st.caption(f"Tamaño ajustado: {original_img.width} × {original_img.height} px")
+                # Configurar layout para zoom interactivo
+                fig.update_layout(
+                    margin=dict(l=0, r=0, t=0, b=0),
+                    xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                    yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                    dragmode='pan',
+                    hovermode=False,
+                    height=500
+                )
+                
+                # Configurar para permitir zoom y pan
+                config = {
+                    'scrollZoom': True,
+                    'displayModeBar': True,
+                    'displaylogo': False,
+                    'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
+                    'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+                    'toImageButtonOptions': {
+                        'format': 'png',
+                        'filename': f'original_{plot_data["image_name"]}',
+                        'height': original_img.height,
+                        'width': original_img.width,
+                        'scale': 1
+                    }
+                }
+                
+                st.plotly_chart(fig, use_container_width=True, config=config)
+                st.caption(f"📐 Dimensiones: {original_img.width} × {original_img.height} px")
             else:
                 st.info("Imagen original no disponible")
         
@@ -789,20 +797,41 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
             img_bytes = base64.b64decode(plot_data['plot_base64'])
             img = Image.open(BytesIO(img_bytes))
             
-            # Aplicar zoom si es diferente de 100%
-            if zoom_level != 100:
-                img_width, img_height = img.size
-                new_width = int(img_width * zoom_level / 100)
-                new_height = int(img_height * zoom_level / 100)
-                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            # Convertir a array numpy para Plotly
+            img_array = np.array(img)
             
-            st.markdown('<div class="image-container">', unsafe_allow_html=True)
-            st.image(img, use_column_width=(zoom_level == 100))
-            st.markdown('</div>', unsafe_allow_html=True)
+            # Crear figura Plotly con zoom interactivo
+            fig = go.Figure()
+            fig.add_trace(go.Image(z=img_array))
             
-            # Mostrar dimensiones
-            if zoom_level != 100:
-                st.caption(f"Tamaño ajustado: {img.width} × {img.height} px")
+            # Configurar layout para zoom interactivo
+            fig.update_layout(
+                margin=dict(l=0, r=0, t=0, b=0),
+                xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                dragmode='pan',
+                hovermode=False,
+                height=500
+            )
+            
+            # Configurar para permitir zoom y pan
+            config = {
+                'scrollZoom': True,
+                'displayModeBar': True,
+                'displaylogo': False,
+                'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
+                'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+                'toImageButtonOptions': {
+                    'format': 'png',
+                    'filename': f'annotated_{plot_data["image_name"]}',
+                    'height': img.height,
+                    'width': img.width,
+                    'scale': 1
+                }
+            }
+            
+            st.plotly_chart(fig, use_container_width=True, config=config)
+            st.caption(f"📐 Dimensiones: {img.width} × {img.height} px")
         
         # Obtener detecciones para esta imagen
         image_detections = [d for d in all_detections if d.get('images') == plot_data['image_name']]
