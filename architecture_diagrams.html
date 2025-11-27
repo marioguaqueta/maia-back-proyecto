@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wildlife Detection System - Architecture Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+        
+        .nav {
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .nav-btn {
+            padding: 12px 24px;
+            background: white;
+            border: 2px solid #4CAF50;
+            color: #4CAF50;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        
+        .nav-btn:hover {
+            background: #4CAF50;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76,175,80,0.3);
+        }
+        
+        .nav-btn.active {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .diagram-section {
+            margin-bottom: 60px;
+            padding: 30px;
+            background: #fafafa;
+            border-radius: 15px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .diagram-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 2em;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        
+        .diagram-section h3 {
+            color: #34495e;
+            margin: 25px 0 15px 0;
+            font-size: 1.5em;
+        }
+        
+        .diagram-section p {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+        .mermaid {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .download-btn {
+            background: #2196F3;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 10px 10px 0;
+            transition: all 0.3s;
+        }
+        
+        .download-btn:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33,150,243,0.3);
+        }
+        
+        .info-box {
+            background: #E3F2FD;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .info-box h4 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+        
+        .info-box ul li {
+            margin: 8px 0;
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 40px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦁 Wildlife Detection System</h1>
+            <p>Architecture Diagrams for Presentation</p>
+        </div>
+        
+        <div class="nav">
+            <a href="#backend" class="nav-btn">🏗️ Backend</a>
+            <a href="#frontend" class="nav-btn">💻 Frontend</a>
+            <a href="#integration" class="nav-btn">🔗 Integration</a>
+            <a href="#interaction" class="nav-btn">🔄 Interaction</a>
+            <a href="#dataflow" class="nav-btn">📊 Data Flow</a>
+            <a href="#stack" class="nav-btn">🎯 Tech Stack</a>
+            <a href="#deployment" class="nav-btn">🚀 Deployment</a>
+            <a href="#security" class="nav-btn">🔐 Security</a>
+        </div>
+        
+        <div class="content">
+            
+            <!-- Backend Architecture -->
+            <div id="backend" class="diagram-section">
+                <h2>🏗️ Backend Architecture - Complete</h2>
+                <p>Comprehensive view of the backend system including API, models, and data storage.</p>
+                
+                <div class="info-box">
+                    <h4>Key Components:</h4>
+                    <ul>
+                        <li><strong>Flask API Server:</strong> REST API with 8 endpoints on port 8000</li>
+                        <li><strong>YOLOv11 Model:</strong> Bounding box detection (150MB)</li>
+                        <li><strong>HerdNet Model:</strong> Point-based detection (90MB)</li>
+                        <li><strong>SQLite Database:</strong> Tasks and detections storage</li>
+                        <li><strong>Swagger/OpenAPI:</strong> Interactive API documentation</li>
+                    </ul>
+                </div>
+                
+                <div class="mermaid">
+graph TB
+    subgraph "Client Layer"
+        CLI[Client Applications]
+        WEB[Web Browser]
+        API_CLIENT[API Clients]
+    end
+    
+    subgraph "API Gateway Layer"
+        FLASK[Flask API Server<br/>Port 8000]
+        SWAGGER[Swagger/OpenAPI<br/>Documentation]
+    end
+    
+    subgraph "Model Layer"
+        YOLO[YOLOv11 Model<br/>best.pt<br/>Bounding Box Detection]
+        HERDNET[HerdNet Model<br/>baseline.pth<br/>Point Detection]
+        LOADER[Model Loader<br/>Google Drive Sync]
+    end
+    
+    subgraph "Processing Layer"
+        IMG_PROC[Image Processing<br/>PIL, OpenCV]
+        BATCH[Batch Processing<br/>ZIP Handler]
+        ANNO[Annotation Generator<br/>Bounding Boxes/Points]
+        BASE64[Base64 Encoder<br/>Image Serialization]
+    end
+    
+    subgraph "Data Layer"
+        DB[(SQLite Database<br/>wildlife_detection.db)]
+        TASKS[Tasks Table]
+        DETECTIONS[Detections Table]
+    end
+    
+    subgraph "Configuration Layer"
+        ENV[Environment Variables<br/>Model Paths, Extensions, etc.]
+        COLORS[Color Scheme<br/>Species Mapping]
+    end
+    
+    CLI --> FLASK
+    WEB --> FLASK
+    API_CLIENT --> FLASK
+    FLASK --> SWAGGER
+    
+    FLASK --> YOLO
+    FLASK --> HERDNET
+    FLASK --> BATCH
+    
+    LOADER -.->|Downloads| YOLO
+    LOADER -.->|Downloads| HERDNET
+    
+    YOLO --> IMG_PROC
+    HERDNET --> IMG_PROC
+    
+    IMG_PROC --> ANNO
+    ANNO --> BASE64
+    
+    FLASK --> DB
+    DB --> TASKS
+    DB --> DETECTIONS
+    
+    ENV -.->|Configures| FLASK
+    ENV -.->|Configures| LOADER
+    COLORS -.->|Configures| ANNO
+    
+    style FLASK fill:#4CAF50
+    style YOLO fill:#2196F3
+    style HERDNET fill:#FF9800
+    style DB fill:#9C27B0
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('backend')">⬇️ Download as Image</button>
+            </div>
+            
+            <!-- Frontend Architecture -->
+            <div id="frontend" class="diagram-section">
+                <h2>💻 Frontend Architecture - Complete</h2>
+                <p>Streamlit-based user interface with interactive components and real-time visualization.</p>
+                
+                <div class="info-box">
+                    <h4>Key Features:</h4>
+                    <ul>
+                        <li><strong>4 Navigation Pages:</strong> Analysis, Results, Statistics, About</li>
+                        <li><strong>File Upload:</strong> ZIP archives and single images</li>
+                        <li><strong>Interactive Controls:</strong> Zoom sliders and quick buttons</li>
+                        <li><strong>Visualization:</strong> Side-by-side image comparison with Plotly charts</li>
+                        <li><strong>Spanish UI:</strong> Fully localized interface</li>
+                    </ul>
+                </div>
+                
+                <div class="mermaid">
+graph TB
+    subgraph "User Interface Layer"
+        BROWSER[Web Browser<br/>User Access]
+        PAGES[Navigation Pages<br/>4 Main Pages]
+    end
+    
+    subgraph "Page Components"
+        NEW[🎯 New Analysis<br/>Upload & Configure]
+        RESULTS[📊 View Results<br/>Past Analyses]
+        STATS[📈 Statistics<br/>Database Insights]
+        ABOUT[ℹ️ About<br/>Documentation]
+    end
+    
+    subgraph "UI Components"
+        UPLOAD[File Upload<br/>ZIP & Images]
+        MODEL_SELECT[Model Selection<br/>YOLO/HerdNet Toggle]
+        PARAMS[Parameter Controls<br/>Sliders & Inputs]
+        ZOOM[Zoom Controls<br/>Slider + Quick Buttons]
+        IMAGES[Image Display<br/>Side-by-Side View]
+        TABLES[Detection Tables<br/>Data Grids]
+        CHARTS[Plotly Charts<br/>Bar & Pie Charts]
+    end
+    
+    subgraph "State Management"
+        SESSION[Session State<br/>Zoom Levels, etc.]
+        CACHE[Cache<br/>API Responses]
+    end
+    
+    subgraph "Configuration"
+        ENV_ST[Streamlit Env Vars<br/>20+ UI Parameters]
+        TOML[config.toml<br/>Server Settings]
+        CSS[Custom CSS<br/>Spanish Translation]
+    end
+    
+    subgraph "API Integration"
+        API_CALLS[HTTP Requests<br/>requests library]
+        BASE64_DEC[Base64 Decoder<br/>Image Processing]
+    end
+    
+    BROWSER --> PAGES
+    PAGES --> NEW
+    PAGES --> RESULTS
+    PAGES --> STATS
+    PAGES --> ABOUT
+    
+    NEW --> UPLOAD
+    NEW --> MODEL_SELECT
+    NEW --> PARAMS
+    
+    RESULTS --> IMAGES
+    RESULTS --> ZOOM
+    RESULTS --> TABLES
+    RESULTS --> CHARTS
+    
+    STATS --> CHARTS
+    
+    ZOOM --> SESSION
+    UPLOAD --> API_CALLS
+    PARAMS --> API_CALLS
+    
+    API_CALLS --> BASE64_DEC
+    BASE64_DEC --> IMAGES
+    
+    ENV_ST -.->|Configures| PARAMS
+    ENV_ST -.->|Configures| ZOOM
+    TOML -.->|Configures| UPLOAD
+    CSS -.->|Styles| UPLOAD
+    
+    style BROWSER fill:#4CAF50
+    style NEW fill:#2196F3
+    style IMAGES fill:#FF9800
+    style API_CALLS fill:#9C27B0
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('frontend')">⬇️ Download as Image</button>
+            </div>
+            
+            <!-- Integration -->
+            <div id="integration" class="diagram-section">
+                <h2>🔗 Backend-Frontend Integration</h2>
+                <p>How the frontend communicates with the backend through REST API endpoints.</p>
+                
+                <div class="info-box">
+                    <h4>Integration Points:</h4>
+                    <ul>
+                        <li><strong>Protocol:</strong> HTTP/HTTPS REST API</li>
+                        <li><strong>Data Format:</strong> JSON + Multipart Form Data</li>
+                        <li><strong>Image Transfer:</strong> Base64 encoding in JSON responses</li>
+                        <li><strong>Endpoints:</strong> 8 API endpoints for different operations</li>
+                    </ul>
+                </div>
+                
+                <div class="mermaid">
+graph TB
+    subgraph "Frontend - Streamlit"
+        UI[User Interface<br/>streamlit_app.py]
+        UPLOAD_UI[File Upload Widget]
+        PARAMS_UI[Parameter Controls]
+        DISPLAY_UI[Results Display]
+    end
+    
+    subgraph "Network Layer"
+        HTTP[HTTP/HTTPS Protocol]
+        JSON[JSON Payloads]
+        MULTIPART[Multipart Form Data]
+    end
+    
+    subgraph "Backend - Flask API"
+        API[Flask Server<br/>app.py]
+        ENDPOINTS[8 REST Endpoints]
+        VALIDATION[Input Validation]
+    end
+    
+    subgraph "API Endpoints"
+        E1[GET /health]
+        E2[GET /models/info]
+        E3[POST /analyze-yolo]
+        E4[POST /analyze-single-image-yolo]
+        E5[POST /analyze-image]
+        E6[POST /analyze-single-image-herdnet]
+        E7[GET /tasks]
+        E8[GET /database/stats]
+    end
+    
+    subgraph "Response Flow"
+        PROCESS[Model Processing]
+        DB_SAVE[Save to Database]
+        RESPONSE[JSON Response<br/>+ Base64 Images]
+    end
+    
+    UI --> UPLOAD_UI
+    UI --> PARAMS_UI
+    
+    UPLOAD_UI -->|File + Params| MULTIPART
+    PARAMS_UI -->|Configuration| JSON
+    
+    MULTIPART --> HTTP
+    JSON --> HTTP
+    
+    HTTP --> API
+    API --> ENDPOINTS
+    ENDPOINTS --> VALIDATION
+    
+    VALIDATION --> E1
+    VALIDATION --> E2
+    VALIDATION --> E3
+    VALIDATION --> E4
+    VALIDATION --> E5
+    VALIDATION --> E6
+    VALIDATION --> E7
+    VALIDATION --> E8
+    
+    E3 --> PROCESS
+    E4 --> PROCESS
+    E5 --> PROCESS
+    E6 --> PROCESS
+    
+    PROCESS --> DB_SAVE
+    DB_SAVE --> RESPONSE
+    
+    RESPONSE --> HTTP
+    HTTP --> DISPLAY_UI
+    
+    style UI fill:#4CAF50
+    style API fill:#2196F3
+    style PROCESS fill:#FF9800
+    style RESPONSE fill:#9C27B0
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('integration')">⬇️ Download as Image</button>
+            </div>
+            
+            <!-- Interaction Sequence -->
+            <div id="interaction" class="diagram-section">
+                <h2>🔄 System Interaction - Sequence Diagram</h2>
+                <p>Step-by-step interaction flow from user upload to result display.</p>
+                
+                <div class="info-box">
+                    <h4>Interaction Steps:</h4>
+                    <ul>
+                        <li><strong>Step 1-3:</strong> User uploads file and configures parameters</li>
+                        <li><strong>Step 4-6:</strong> Frontend sends request to backend</li>
+                        <li><strong>Step 7-11:</strong> Backend processes images with ML models</li>
+                        <li><strong>Step 12-14:</strong> Results saved to database</li>
+                        <li><strong>Step 15-17:</strong> Response sent back and displayed</li>
+                    </ul>
+                </div>
+                
+                <div class="mermaid">
+sequenceDiagram
+    participant U as 👤 User
+    participant FE as 💻 Frontend<br/>(Streamlit)
+    participant API as 🔧 Backend API<br/>(Flask)
+    participant ML as 🤖 ML Models<br/>(YOLO/HerdNet)
+    participant DB as 💾 Database<br/>(SQLite)
+    
+    rect rgb(200, 220, 240)
+        Note over U,FE: User Interaction
+        U->>FE: 1. Upload images (ZIP/Single)
+        U->>FE: 2. Select model (YOLO/HerdNet)
+        U->>FE: 3. Configure parameters
+        U->>FE: 4. Click "Ejecutar Análisis"
+    end
+    
+    rect rgb(220, 240, 220)
+        Note over FE,API: Frontend → Backend
+        FE->>FE: 5. Validate inputs
+        FE->>API: 6. POST /analyze-xxx<br/>(multipart/form-data)
+    end
+    
+    rect rgb(255, 240, 220)
+        Note over API,ML: Backend Processing
+        API->>API: 7. Validate file type
+        API->>API: 8. Generate Task ID
+        API->>DB: 9. Save task (processing status)
+        API->>API: 10. Extract images from ZIP
+        API->>ML: 11. Run model inference
+    end
+    
+    rect rgb(240, 220, 255)
+        Note over ML: Model Inference
+        ML->>ML: 12. Detect animals
+        ML->>ML: 13. Generate annotations
+        ML->>API: 14. Return detections
+    end
+    
+    rect rgb(220, 255, 240)
+        Note over API,DB: Save Results
+        API->>API: 15. Create annotated images
+        API->>API: 16. Encode to Base64
+        API->>DB: 17. Update task (completed)
+        API->>DB: 18. Save detections
+    end
+    
+    rect rgb(240, 240, 255)
+        Note over API,FE: Backend → Frontend
+        API->>FE: 19. JSON Response<br/>(detections + Base64 images)
+    end
+    
+    rect rgb(255, 220, 240)
+        Note over FE,U: Display Results
+        FE->>FE: 20. Decode Base64 images
+        FE->>FE: 21. Render results with zoom
+        FE->>U: 22. Display detections
+        U->>FE: 23. Adjust zoom level
+        FE->>FE: 24. Resize images
+        FE->>U: 25. Update display
+    end
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('interaction')">⬇️ Download as Image</button>
+            </div>
+            
+            <!-- Data Flow -->
+            <div id="dataflow" class="diagram-section">
+                <h2>📊 Data Flow - YOLO Processing</h2>
+                <p>Detailed data flow for YOLOv11 image analysis pipeline.</p>
+                
+                <div class="mermaid">
+graph LR
+    subgraph "Input"
+        ZIP[📦 ZIP File<br/>Multiple Images]
+        PARAMS[⚙️ Parameters<br/>Conf: 0.25<br/>IOU: 0.45<br/>Size: 640]
+    end
+    
+    subgraph "Upload & Extract"
+        UPLOAD[Upload to Flask]
+        EXTRACT[Extract Images]
+        VALIDATE[Validate Files]
+    end
+    
+    subgraph "Processing"
+        LOAD[Load Images<br/>PIL]
+        PREPROC[Preprocessing<br/>Resize, Normalize]
+        YOLO_INF[YOLOv11 Inference]
+        DETECT[Extract Detections<br/>Bboxes, Classes, Conf]
+    end
+    
+    subgraph "Annotation"
+        DRAW[Draw Bounding Boxes]
+        LABEL[Add Labels<br/>Species + Confidence]
+        COLOR[Apply Colors<br/>Per Species]
+    end
+    
+    subgraph "Output Preparation"
+        ORIG_B64[Encode Original<br/>Base64]
+        ANNO_B64[Encode Annotated<br/>Base64]
+        JSON_PREP[Prepare JSON<br/>Detections + Images]
+    end
+    
+    subgraph "Storage"
+        SAVE_TASK[💾 Save Task Info]
+        SAVE_DET[💾 Save Detections]
+    end
+    
+    subgraph "Response"
+        JSON_RESP[📤 JSON Response<br/>Summary + Images]
+        DISPLAY[🖼️ Frontend Display]
+    end
+    
+    ZIP --> UPLOAD
+    PARAMS --> UPLOAD
+    
+    UPLOAD --> EXTRACT
+    EXTRACT --> VALIDATE
+    VALIDATE --> LOAD
+    
+    LOAD --> PREPROC
+    PREPROC --> YOLO_INF
+    YOLO_INF --> DETECT
+    
+    DETECT --> DRAW
+    DRAW --> LABEL
+    LABEL --> COLOR
+    
+    LOAD --> ORIG_B64
+    COLOR --> ANNO_B64
+    DETECT --> JSON_PREP
+    ORIG_B64 --> JSON_PREP
+    ANNO_B64 --> JSON_PREP
+    
+    JSON_PREP --> SAVE_TASK
+    JSON_PREP --> SAVE_DET
+    
+    SAVE_TASK --> JSON_RESP
+    SAVE_DET --> JSON_RESP
+    
+    JSON_RESP --> DISPLAY
+    
+    style ZIP fill:#4CAF50
+    style YOLO_INF fill:#2196F3
+    style JSON_RESP fill:#FF9800
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('dataflow')">⬇️ Download as Image</button>
+            </div>
+            
+            <!-- Technology Stack -->
+            <div id="stack" class="diagram-section">
+                <h2>🎯 Technology Stack</h2>
+                <p>Complete overview of all technologies, frameworks, and tools used.</p>
+                
+                <div class="info-box">
+                    <h4>Technology Highlights:</h4>
+                    <ul>
+                        <li><strong>Languages:</strong> Python 3.11+</li>
+                        <li><strong>Frameworks:</strong> Flask 3.0, Streamlit 1.28</li>
+                        <li><strong>ML:</strong> PyTorch 2.0, Ultralytics, AnimalOC</li>
+                        <li><strong>Deployment:</strong> Docker, Docker Compose, AWS EC2</li>
+                        <li><strong>CI/CD:</strong> GitHub Actions</li>
+                    </ul>
+                </div>
+                
+                <div class="mermaid">
+graph TB
+    subgraph "Frontend Stack"
+        ST[Streamlit 1.28+<br/>🎨 Web Framework]
+        PY_FE[Python 3.11<br/>💻 Language]
+        PIL_FE[Pillow<br/>🖼️ Image Processing]
+        PLOTLY[Plotly<br/>📊 Visualization]
+        REQ[Requests<br/>🌐 HTTP Client]
+    end
+    
+    subgraph "Backend Stack"
+        FLASK[Flask 3.0+<br/>🔧 Web Framework]
+        PY_BE[Python 3.11<br/>💻 Language]
+        TORCH[PyTorch 2.0+<br/>🧠 Deep Learning]
+        CV[OpenCV<br/>👁️ Computer Vision]
+        PIL_BE[Pillow<br/>🖼️ Image Processing]
+        NUMPY[NumPy<br/>🔢 Computing]
+        PANDAS[Pandas<br/>📈 Data Analysis]
+    end
+    
+    subgraph "ML Models"
+        ULTRA[Ultralytics<br/>🎯 YOLOv11]
+        ANIMALOC[AnimalOC<br/>📍 HerdNet]
+        ALBUM[Albumentations<br/>🔄 Augmentations]
+    end
+    
+    subgraph "API & Docs"
+        FLASGGER[Flasgger<br/>📚 Swagger/OpenAPI]
+        WERKZEUG[Werkzeug<br/>🛠️ WSGI Utils]
+    end
+    
+    subgraph "Data & Storage"
+        SQLITE[SQLite<br/>💾 Database]
+        JSON_LIB[JSON<br/>📋 Serialization]
+        B64[Base64<br/>🔐 Encoding]
+    end
+    
+    subgraph "DevOps & Cloud"
+        DOCKER[Docker<br/>🐳 Containers]
+        COMPOSE[Docker Compose<br/>🎼 Orchestration]
+        GITHUB_A[GitHub Actions<br/>⚙️ CI/CD]
+        EC2[AWS EC2<br/>☁️ Cloud Compute]
+        GDRIVE_T[Google Drive<br/>📁 Model Storage]
+    end
+    
+    ST --> PY_FE
+    ST --> PIL_FE
+    ST --> PLOTLY
+    ST --> REQ
+    
+    FLASK --> PY_BE
+    FLASK --> TORCH
+    FLASK --> CV
+    FLASK --> PIL_BE
+    FLASK --> NUMPY
+    FLASK --> PANDAS
+    
+    TORCH --> ULTRA
+    TORCH --> ANIMALOC
+    TORCH --> ALBUM
+    
+    FLASK --> FLASGGER
+    FLASK --> WERKZEUG
+    
+    FLASK --> SQLITE
+    FLASK --> JSON_LIB
+    FLASK --> B64
+    
+    DOCKER --> COMPOSE
+    COMPOSE --> FLASK
+    COMPOSE --> ST
+    
+    GITHUB_A --> EC2
+    EC2 --> DOCKER
+    
+    GDRIVE_T -.-> ULTRA
+    GDRIVE_T -.-> ANIMALOC
+    
+    style ST fill:#FF4B4B
+    style FLASK fill:#4CAF50
+    style TORCH fill:#EE4C2C
+    style DOCKER fill:#2496ED
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('stack')">⬇️ Download as Image</button>
+            </div>
+            
+            <!-- Deployment -->
+            <div id="deployment" class="diagram-section">
+                <h2>🚀 Deployment Architecture</h2>
+                <p>Production deployment on AWS EC2 with Docker containers.</p>
+                
+                <div class="info-box">
+                    <h4>Deployment Features:</h4>
+                    <ul>
+                        <li><strong>Platform:</strong> AWS EC2 Ubuntu instance</li>
+                        <li><strong>Containers:</strong> Docker with Docker Compose</li>
+                        <li><strong>Persistence:</strong> Volume mounts for models and database</li>
+                        <li><strong>CI/CD:</strong> Automated deployment via GitHub Actions</li>
+                        <li><strong>Monitoring:</strong> Health checks and logging</li>
+                    </ul>
+                </div>
+                
+                <div class="mermaid">
+graph TB
+    subgraph "Production - AWS EC2"
+        subgraph "Docker Environment"
+            BACKEND[🔧 Backend Container<br/>Flask API<br/>Port 8000]
+            FRONTEND[💻 Frontend Container<br/>Streamlit<br/>Port 8501]
+        end
+        
+        subgraph "Persistent Storage"
+            VOL_MODELS[📦 Models Volume<br/>best.pt (150MB)<br/>baseline.pth (90MB)]
+            VOL_DB[💾 Database Volume<br/>wildlife_detection.db]
+            VOL_UPLOADS[📁 Uploads Volume<br/>Temporary Files]
+        end
+        
+        NGINX[🌐 Nginx<br/>Reverse Proxy<br/>Port 80/443]
+    end
+    
+    subgraph "External Services"
+        GDRIVE_D[☁️ Google Drive<br/>Model Backup & Sync]
+    end
+    
+    subgraph "Users & Access"
+        RESEARCHER[👨‍🔬 Researchers]
+        ANALYST[👩‍💼 Analysts]
+        ADMIN[👨‍💻 Administrators]
+    end
+    
+    subgraph "CI/CD Pipeline"
+        GITHUB_R[📂 GitHub Repo<br/>Source Code]
+        ACTIONS_D[⚙️ GitHub Actions<br/>Auto Deploy]
+        SSH[🔑 SSH Deploy<br/>rsync + docker]
+    end
+    
+    RESEARCHER -->|HTTPS| NGINX
+    ANALYST -->|HTTPS| NGINX
+    ADMIN -->|HTTPS| NGINX
+    
+    NGINX --> FRONTEND
+    NGINX --> BACKEND
+    
+    FRONTEND -->|Internal| BACKEND
+    
+    BACKEND --> VOL_MODELS
+    BACKEND --> VOL_DB
+    BACKEND --> VOL_UPLOADS
+    
+    GDRIVE_D -.->|Download on Init| VOL_MODELS
+    
+    GITHUB_R --> ACTIONS_D
+    ACTIONS_D --> SSH
+    SSH -->|Deploy| BACKEND
+    SSH -->|Deploy| FRONTEND
+    
+    style BACKEND fill:#4CAF50
+    style FRONTEND fill:#2196F3
+    style NGINX fill:#FF9800
+    style GDRIVE_D fill:#FFC107
+    style ACTIONS_D fill:#2088FF
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('deployment')">⬇️ Download as Image</button>
+            </div>
+            
+            <!-- Security Architecture -->
+            <div id="security" class="diagram-section">
+                <h2>🔐 Security Architecture</h2>
+                <p>Security layers and protection mechanisms implemented in the system.</p>
+                
+                <div class="info-box">
+                    <h4>Security Measures:</h4>
+                    <ul>
+                        <li><strong>Network Security:</strong> Firewall, SSL/TLS, Rate limiting</li>
+                        <li><strong>Input Validation:</strong> File type checking, size limits</li>
+                        <li><strong>Sandboxing:</strong> Isolated temporary processing</li>
+                        <li><strong>Secrets Management:</strong> Environment variables, no hardcoded credentials</li>
+                        <li><strong>Data Protection:</strong> Database permissions, automatic cleanup</li>
+                    </ul>
+                </div>
+                
+                <div class="mermaid">
+graph TB
+    subgraph "External Layer"
+        USERS_S[🌍 Users/Clients]
+        FIREWALL_S[🛡️ Firewall<br/>AWS Security Groups]
+    end
+    
+    subgraph "Network Layer"
+        SSL_S[🔒 SSL/TLS<br/>HTTPS Encryption]
+        NGINX_SEC[🌐 Nginx<br/>Reverse Proxy]
+        RATE_S[⏱️ Rate Limiting<br/>DDoS Protection]
+    end
+    
+    subgraph "Application Layer"
+        INPUT_VAL_S[✅ Input Validation<br/>File Types & Sizes]
+        SANIT_S[🧹 Sanitization<br/>Secure Filenames]
+        CSRF_S[🛡️ CSRF Protection<br/>Request Validation]
+    end
+    
+    subgraph "Processing Layer"
+        SANDBOX_S[📦 Sandboxed Processing<br/>Temp Directories]
+        CLEANUP_S[🗑️ Auto Cleanup<br/>After Processing]
+        ERROR_S[⚠️ Error Handling<br/>No Data Leakage]
+    end
+    
+    subgraph "Data Layer"
+        DB_PERM_S[🔐 DB Permissions<br/>Controlled Access]
+        ENV_SEC_S[🔑 Environment Vars<br/>Secrets Management]
+        GITIGNORE_S[📝 .gitignore<br/>Sensitive Files]
+    end
+    
+    USERS_S --> FIREWALL_S
+    FIREWALL_S --> SSL_S
+    SSL_S --> NGINX_SEC
+    NGINX_SEC --> RATE_S
+    
+    RATE_S --> INPUT_VAL_S
+    INPUT_VAL_S --> SANIT_S
+    SANIT_S --> CSRF_S
+    
+    CSRF_S --> SANDBOX_S
+    SANDBOX_S --> CLEANUP_S
+    CLEANUP_S --> ERROR_S
+    
+    ERROR_S --> DB_PERM_S
+    DB_PERM_S --> ENV_SEC_S
+    ENV_SEC_S --> GITIGNORE_S
+    
+    style FIREWALL_S fill:#F44336
+    style SSL_S fill:#FF9800
+    style INPUT_VAL_S fill:#4CAF50
+    style SANDBOX_S fill:#2196F3
+    style ENV_SEC_S fill:#9C27B0
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('security')">⬇️ Download as Image</button>
+            </div>
+            
+        </div>
+        
+        <div class="footer">
+            <h3>🦁 African Wildlife Detection System</h3>
+            <p>Architecture Diagrams | Version 2.6.0 | November 2025</p>
+            <p>Built with: Flask, Streamlit, PyTorch, YOLOv11, HerdNet</p>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#4CAF50',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#2E7D32',
+                lineColor: '#666',
+                secondaryColor: '#2196F3',
+                tertiaryColor: '#FF9800',
+                fontSize: '16px'
+            }
+        });
+        
+        // Smooth scroll for navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(btn.getAttribute('href'));
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Update active state
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+        
+        // Download diagram function
+        function downloadDiagram(diagramId) {
+            alert('To download diagrams as images:\n\n' +
+                  '1. Use Mermaid Live Editor: https://mermaid.live/\n' +
+                  '2. Copy the diagram code from PRESENTATION_DIAGRAMS.md\n' +
+                  '3. Paste into the editor\n' +
+                  '4. Click "Export" → PNG/SVG\n\n' +
+                  'Or use mermaid-cli:\n' +
+                  'npm install -g @mermaid-js/mermaid-cli\n' +
+                  'mmdc -i diagram.mmd -o diagram.png');
+        }
+        
+        // Print friendly version
+        window.addEventListener('beforeprint', () => {
+            document.querySelectorAll('.nav, .download-btn').forEach(el => {
+                el.style.display = 'none';
+            });
+        });
+        
+        window.addEventListener('afterprint', () => {
+            document.querySelectorAll('.nav, .download-btn').forEach(el => {
+                el.style.display = '';
+            });
+        });
+    </script>
+</body>
+</html>
+
