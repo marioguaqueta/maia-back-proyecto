@@ -98,14 +98,46 @@ swagger_config = {
 
 swagger = Swagger(app, template=swagger_template, config=swagger_config)
 
+# Helper function to parse comma-separated extensions from environment variables
+def parse_extensions_env(env_var_name, default_value):
+    """
+    Parse comma-separated file extensions from environment variable.
+    Handles quotes, brackets, whitespace, and mixed case.
+    
+    Args:
+        env_var_name: Name of the environment variable
+        default_value: Default comma-separated string if env var not set
+    
+    Returns:
+        Set of lowercase extension strings
+    """
+    value = os.environ.get(env_var_name, default_value)
+    
+    # Remove leading/trailing quotes and brackets
+    value = value.strip().strip("'\"[]")
+    
+    # Split by comma and process each extension
+    extensions = []
+    for ext in value.split(','):
+        # Strip whitespace and quotes from each extension
+        ext = ext.strip().strip("'\"[]")
+        if ext:  # Only add non-empty strings
+            extensions.append(ext.lower())
+    
+    return set(extensions)
+
 # Allowed file extensions (from environment variables or defaults)
-# Strip whitespace and convert to lowercase for consistent comparison
-ALLOWED_IMAGE_EXTENSIONS = set(ext.strip().lower() for ext in os.environ.get('ALLOWED_IMAGE_EXTENSIONS', 'png,jpg,jpeg,JPG,JPEG,gif,webp,bmp').split(','))
-ALLOWED_ZIP_EXTENSIONS = set(ext.strip().lower() for ext in os.environ.get('ALLOWED_ZIP_EXTENSIONS', 'zip').split(','))
+ALLOWED_IMAGE_EXTENSIONS = parse_extensions_env(
+    'ALLOWED_IMAGE_EXTENSIONS', 
+    'png,jpg,jpeg,JPG,JPEG,gif,webp,bmp'
+)
+ALLOWED_ZIP_EXTENSIONS = parse_extensions_env(
+    'ALLOWED_ZIP_EXTENSIONS', 
+    'zip'
+)
 
 # Create tuples for endswith() checks (include both lowercase and uppercase)
 ALLOWED_IMAGE_EXTENSIONS_TUPLE = tuple(f'.{ext}' for ext in ALLOWED_IMAGE_EXTENSIONS) + tuple(f'.{ext.upper()}' for ext in ALLOWED_IMAGE_EXTENSIONS)
-ALLOWED_ZIP_EXTENSIONS_TUPLE = tuple(f'.{ext}' for ext in ALLOWED_ZIP_EXTENSIONS) + tuple(f'.{ext.upper()}' for ext in ALLOWED_ZIP_EXTENSIONS)
 
 # ========================================
 # Initialize Database and Download Models
