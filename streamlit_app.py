@@ -77,6 +77,18 @@ HERDNET_THUMBNAIL_MAX = int(os.getenv("HERDNET_THUMBNAIL_MAX", "512"))
 HERDNET_THUMBNAIL_DEFAULT = int(os.getenv("HERDNET_THUMBNAIL_DEFAULT", "256"))
 HERDNET_THUMBNAIL_STEP = int(os.getenv("HERDNET_THUMBNAIL_STEP", "32"))
 
+# ========================================
+# Image Zoom Configuration
+# ========================================
+# Zoom Control Parameters
+ZOOM_MIN = int(os.getenv("ZOOM_MIN", "50"))
+ZOOM_MAX = int(os.getenv("ZOOM_MAX", "200"))
+ZOOM_DEFAULT = int(os.getenv("ZOOM_DEFAULT", "100"))
+ZOOM_STEP = int(os.getenv("ZOOM_STEP", "10"))
+
+# Quick Zoom Buttons (comma-separated percentages)
+ZOOM_QUICK_LEVELS = [int(x) for x in os.getenv("ZOOM_QUICK_LEVELS", "50,75,100,150,200").split(",")]
+
 # Configuración de página
 st.set_page_config(
     page_title="Detección de Fauna Africana",
@@ -524,18 +536,32 @@ def show_image_modal(img_data, img_name, model_type):
     
     # Controles de zoom
     st.markdown("---")
-    col1, col2, col3 = st.columns([1, 2, 1])
     
-    with col2:
+    zoom_col1, zoom_col2 = st.columns([3, 2])
+    
+    with zoom_col1:
         zoom_level = st.slider(
             "🔍 Nivel de Zoom",
-            min_value=50,
-            max_value=200,
-            value=100,
-            step=10,
+            min_value=ZOOM_MIN,
+            max_value=ZOOM_MAX,
+            value=ZOOM_DEFAULT,
+            step=ZOOM_STEP,
             format="%d%%",
-            key=f"zoom_{img_name}"
+            key=f"zoom_slider_modal_{img_name}"
         )
+    
+    with zoom_col2:
+        st.markdown("**Zoom Rápido:**")
+        cols = st.columns(len(ZOOM_QUICK_LEVELS))
+        for idx, level in enumerate(ZOOM_QUICK_LEVELS):
+            with cols[idx]:
+                if st.button(f"{level}%", key=f"zoom_btn_modal_{img_name}_{level}", use_container_width=True):
+                    st.session_state[f"zoom_slider_modal_{img_name}"] = level
+                    st.rerun()
+    
+    # Use the zoom level from session state if button was clicked
+    if f"zoom_slider_modal_{img_name}" in st.session_state:
+        zoom_level = st.session_state[f"zoom_slider_modal_{img_name}"]
     
     # Calcular nuevas dimensiones según el zoom
     new_width = int(width * zoom_level / 100)
@@ -578,6 +604,36 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
         </div>
         """, unsafe_allow_html=True)
         
+        # Control de zoom con botones rápidos
+        zoom_col1, zoom_col2 = st.columns([3, 1])
+        
+        with zoom_col1:
+            zoom_level = st.slider(
+                "🔍 Nivel de Zoom",
+                min_value=ZOOM_MIN,
+                max_value=ZOOM_MAX,
+                value=ZOOM_DEFAULT,
+                step=ZOOM_STEP,
+                format="%d%%",
+                key=f"zoom_slider_yolo_{img_idx}_{img_data['image_name']}",
+                help="Ajusta el tamaño de visualización de las imágenes"
+            )
+        
+        with zoom_col2:
+            st.markdown("**Rápido:**")
+            # Create buttons for quick zoom levels
+            cols = st.columns(len(ZOOM_QUICK_LEVELS))
+            for idx, level in enumerate(ZOOM_QUICK_LEVELS):
+                with cols[idx]:
+                    if st.button(f"{level}%", key=f"zoom_btn_yolo_{img_idx}_{img_data['image_name']}_{level}", use_container_width=True):
+                        # Update session state to change slider value
+                        st.session_state[f"zoom_slider_yolo_{img_idx}_{img_data['image_name']}"] = level
+                        st.rerun()
+        
+        # Use the zoom level from session state if button was clicked
+        if f"zoom_slider_yolo_{img_idx}_{img_data['image_name']}" in st.session_state:
+            zoom_level = st.session_state[f"zoom_slider_yolo_{img_idx}_{img_data['image_name']}"]
+        
         # Mostrar imágenes lado a lado
         col1, col2 = st.columns(2)
         
@@ -587,9 +643,21 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
             if 'original_image_base64' in img_data:
                 original_bytes = base64.b64decode(img_data['original_image_base64'])
                 original_img = Image.open(BytesIO(original_bytes))
+                
+                # Aplicar zoom si es diferente de 100%
+                if zoom_level != 100:
+                    orig_width, orig_height = original_img.size
+                    new_width = int(orig_width * zoom_level / 100)
+                    new_height = int(orig_height * zoom_level / 100)
+                    original_img = original_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                
                 st.markdown('<div class="image-container">', unsafe_allow_html=True)
-                st.image(original_img, use_container_width=True)
+                st.image(original_img, use_column_width=(zoom_level == 100))
                 st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Mostrar dimensiones
+                if zoom_level != 100:
+                    st.caption(f"Tamaño ajustado: {original_img.width} × {original_img.height} px")
             else:
                 st.info("Imagen original no disponible")
         
@@ -598,9 +666,21 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
             st.markdown("**🎯 Imagen Con Detecciones**")
             img_bytes = base64.b64decode(img_data['annotated_image_base64'])
             img = Image.open(BytesIO(img_bytes))
+            
+            # Aplicar zoom si es diferente de 100%
+            if zoom_level != 100:
+                img_width, img_height = img.size
+                new_width = int(img_width * zoom_level / 100)
+                new_height = int(img_height * zoom_level / 100)
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
             st.markdown('<div class="image-container">', unsafe_allow_html=True)
-            st.image(img, use_container_width=True)
+            st.image(img, use_column_width=(zoom_level == 100))
             st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Mostrar dimensiones
+            if zoom_level != 100:
+                st.caption(f"Tamaño ajustado: {img.width} × {img.height} px")
         
         # Obtener detecciones para esta imagen
         image_detections = [d for d in all_detections if d.get('image') == img_data['image_name']]
@@ -646,6 +726,36 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
         </div>
         """, unsafe_allow_html=True)
         
+        # Control de zoom con botones rápidos
+        zoom_col1, zoom_col2 = st.columns([3, 1])
+        
+        with zoom_col1:
+            zoom_level = st.slider(
+                "🔍 Nivel de Zoom",
+                min_value=ZOOM_MIN,
+                max_value=ZOOM_MAX,
+                value=ZOOM_DEFAULT,
+                step=ZOOM_STEP,
+                format="%d%%",
+                key=f"zoom_slider_herdnet_{plot_idx}_{plot_data['image_name']}",
+                help="Ajusta el tamaño de visualización de las imágenes"
+            )
+        
+        with zoom_col2:
+            st.markdown("**Rápido:**")
+            # Create buttons for quick zoom levels
+            cols = st.columns(len(ZOOM_QUICK_LEVELS))
+            for idx, level in enumerate(ZOOM_QUICK_LEVELS):
+                with cols[idx]:
+                    if st.button(f"{level}%", key=f"zoom_btn_herdnet_{plot_idx}_{plot_data['image_name']}_{level}", use_container_width=True):
+                        # Update session state to change slider value
+                        st.session_state[f"zoom_slider_herdnet_{plot_idx}_{plot_data['image_name']}"] = level
+                        st.rerun()
+        
+        # Use the zoom level from session state if button was clicked
+        if f"zoom_slider_herdnet_{plot_idx}_{plot_data['image_name']}" in st.session_state:
+            zoom_level = st.session_state[f"zoom_slider_herdnet_{plot_idx}_{plot_data['image_name']}"]
+        
         # Mostrar imágenes lado a lado
         col1, col2 = st.columns(2)
         
@@ -655,9 +765,21 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
             if 'original_image_base64' in plot_data:
                 original_bytes = base64.b64decode(plot_data['original_image_base64'])
                 original_img = Image.open(BytesIO(original_bytes))
+                
+                # Aplicar zoom si es diferente de 100%
+                if zoom_level != 100:
+                    orig_width, orig_height = original_img.size
+                    new_width = int(orig_width * zoom_level / 100)
+                    new_height = int(orig_height * zoom_level / 100)
+                    original_img = original_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                
                 st.markdown('<div class="image-container">', unsafe_allow_html=True)
-                st.image(original_img, use_container_width=True)
+                st.image(original_img, use_column_width=(zoom_level == 100))
                 st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Mostrar dimensiones
+                if zoom_level != 100:
+                    st.caption(f"Tamaño ajustado: {original_img.width} × {original_img.height} px")
             else:
                 st.info("Imagen original no disponible")
         
@@ -666,9 +788,21 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
             st.markdown("**🎯 Imagen Con Detecciones**")
             img_bytes = base64.b64decode(plot_data['plot_base64'])
             img = Image.open(BytesIO(img_bytes))
+            
+            # Aplicar zoom si es diferente de 100%
+            if zoom_level != 100:
+                img_width, img_height = img.size
+                new_width = int(img_width * zoom_level / 100)
+                new_height = int(img_height * zoom_level / 100)
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
             st.markdown('<div class="image-container">', unsafe_allow_html=True)
-            st.image(img, use_container_width=True)
+            st.image(img, use_column_width=(zoom_level == 100))
             st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Mostrar dimensiones
+            if zoom_level != 100:
+                st.caption(f"Tamaño ajustado: {img.width} × {img.height} px")
         
         # Obtener detecciones para esta imagen
         image_detections = [d for d in all_detections if d.get('images') == plot_data['image_name']]
