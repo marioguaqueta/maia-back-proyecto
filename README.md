@@ -1,6 +1,6 @@
 # API de Detección de Fauna Africana
 
-Una API REST basada en Flask para detectar y analizar fauna africana en imágenes aéreas/satelitales utilizando los modelos de aprendizaje profundo **YOLOv11** y **HerdNet**, con una moderna interfaz web Streamlit.
+Nuestro proecto se basa en una API REST basada en Flask para detectar y analizar fauna africana en imágenes aéreas/satelitales utilizando los modelos de aprendizaje profundo **YOLOv11** y **HerdNet**, con una moderna interfaz web Streamlit.
 
 ## ✨ Características
 
@@ -9,7 +9,7 @@ Una API REST basada en Flask para detectar y analizar fauna africana en imágene
 - 🎯 **Detección YOLOv11**: Detección rápida y precisa de cajas delimitadoras con imágenes anotadas
 - 📍 **Detección HerdNet**: Detección precisa basada en puntos optimizada para imágenes aéreas
 - 🗺️ **Soporte para Imágenes Grandes**: Procesa imágenes satelitales grandes (6000x4000+) usando unión inteligente
-- 📦 **Procesamiento por Lotes**: Sube archivos ZIP con múltiples imágenes para análisis por lotes
+- 📦 **Procesamiento por Lotes**: Sube archivos ZIP con múltiples imágenes para análisis por lotes hasta 100 MB
 - 🖼️ **Análisis de Imagen Individual**: Sube imágenes individuales (PNG, JPG, GIF, WebP, BMP, TIFF) para pruebas rápidas
 - ⚡ **Entrada Flexible**: Elige entre ZIP (lotes) o imagen individual según tus necesidades
 
@@ -19,14 +19,13 @@ Una API REST basada en Flask para detectar y analizar fauna africana en imágene
 - 📈 **Estadísticas**: Ver estadísticas completas sobre todos los análisis
 
 ### Interfaces de Usuario
-- 🌐 **Interfaz Web Streamlit**: Interfaz web hermosa y fácil de usar
-- 🔌 **API REST**: API REST completa para acceso programático
+- 🌐 **Interfaz Web Streamlit**: Interfaz web intuitiva y fácil de usar
+- 🔌 **API REST**: API REST completa para acceso programático desde diferentes aplicaciones web
 - 📱 **Diseño Responsivo**: Funciona en escritorio, tablet y móvil
 
 ### Despliegue
 - ☁️ **Listo para la Nube**: Los modelos se descargan automáticamente desde Google Drive
 - 🚀 **Configuración Fácil**: Sin archivos grandes en el repositorio
-- 📦 **Compatible con Streamlit Cloud**: Listo para despliegue en la nube
 
 ## 🚀 Inicio Rápido
 
@@ -35,7 +34,16 @@ Una API REST basada en Flask para detectar y analizar fauna africana en imágene
 ```bash
 # Clonar el repositorio
 git clone <repository-url>
-cd back
+cd maia-back-proyecto
+
+# Crear entorno virtual
+python3 -m venv .venv
+
+# Linux/MacOS
+source .venv/bin/activate  
+
+#Windows
+.venv/bin/activate
 
 # Instalar dependencias
 pip install -r requirements.txt
@@ -46,19 +54,9 @@ pip install git+https://github.com/Alexandre-Delplanque/HerdNet.git
 
 **Nota:** Los archivos de modelos (`best.pt` y `herdnet_model.pth`) se **descargarán automáticamente desde Google Drive** en la primera ejecución!
 
-### 2. Iniciar el Sistema
+Es importante que los archivos estén dentro de un folder publico de google drive, y que se configure la variable GDRIVE_FOLDER_ID en dicho folder
 
-**Opción A: Usando el script de inicio (Recomendado)**
-
-```bash
-# En Linux/Mac
-./start.sh
-
-# En Windows
-start.bat
-```
-
-**Opción B: Inicio manual (dos terminales)**
+**Opción A: Inicio manual (dos terminales)**
 
 Terminal 1 - Backend:
 ```bash
