@@ -1,6 +1,5 @@
-# API de Detección de Fauna Africana
-
-Una API REST basada en Flask para detectar, contar y clasificar especies específicas de fauna africana utilizando imágenes aéreas, apoyado en las predicciones de los modelos de aprendizaje profundo **YOLOv11** y como referencia base **HerdNet**, facilitando el uso de usuarios finales a través de una interfaz web Streamlit.
+# Sistema de Detección, conteo y clasificación de especies específicas Fauna Africana con imágenes aéreas
+Este proyecto ofrece un API REST basada en Flask (Python) para detectar, contar y clasificar especies específicas de fauna africana utilizando imágenes aéreas, utilizando las predicciones de los modelos de aprendizaje profundo **YOLOv11** con entrenamiento específico y como referencia base **HerdNet**, facilitando el uso de usuarios finales a través de una interfaz web Streamlit.
 
 ## ✨ Características
 
@@ -9,7 +8,7 @@ Una API REST basada en Flask para detectar, contar y clasificar especies especí
 - 🎯 **Detección YOLOv11**: Detección rápida y precisa de cajas delimitadoras con imágenes anotadas
 - 📍 **Detección HerdNet**: Detección precisa basada en puntos optimizada para imágenes aéreas
 - 🗺️ **Soporte para Imágenes Grandes**: Procesa imágenes satelitales grandes (6000x4000+) usando unión inteligente
-- 📦 **Procesamiento por Lotes**: Sube archivos ZIP con múltiples imágenes para análisis por lotes
+- 📦 **Procesamiento por Lotes**: Sube archivos ZIP con múltiples imágenes para análisis por lotes hasta 100 MB
 - 🖼️ **Análisis de Imagen Individual**: Sube imágenes individuales (PNG, JPG, GIF, WebP, BMP, TIFF) para pruebas rápidas
 - ⚡ **Entrada Flexible**: Elige entre ZIP (lotes) o imagen individual según tus necesidades
 
@@ -19,14 +18,13 @@ Una API REST basada en Flask para detectar, contar y clasificar especies especí
 - 📈 **Estadísticas**: Ver estadísticas completas sobre todos los análisis
 
 ### Interfaces de Usuario
-- 🌐 **Interfaz Web Streamlit**: Interfaz web hermosa y fácil de usar
-- 🔌 **API REST**: API REST completa para acceso programático
+- 🌐 **Interfaz Web Streamlit**: Interfaz web intuitiva y fácil de usar
+- 🔌 **API REST**: API REST completa para acceso programático desde diferentes aplicaciones web
 - 📱 **Diseño Responsivo**: Funciona en escritorio, tablet y móvil
 
 ### Despliegue
 - ☁️ **Listo para la Nube**: Los modelos se descargan automáticamente desde Google Drive
 - 🚀 **Configuración Fácil**: Sin archivos grandes en el repositorio
-- 📦 **Compatible con Streamlit Cloud**: Listo para despliegue en la nube
 
 ## 🚀 Inicio Rápido
 
@@ -34,8 +32,17 @@ Una API REST basada en Flask para detectar, contar y clasificar especies especí
 
 ```bash
 # Clonar el repositorio
-git clone <repository-url>
-cd back
+git clone https://github.com/marioguaqueta/maia-back-proyecto.git
+cd maia-back-proyecto
+
+# Crear entorno virtual
+python3 -m venv .venv
+
+# Linux/MacOS
+source .venv/bin/activate  
+
+#Windows
+.venv/bin/activate
 
 # Instalar dependencias
 pip install -r requirements.txt
@@ -46,19 +53,9 @@ pip install git+https://github.com/Alexandre-Delplanque/HerdNet.git
 
 **Nota:** Los archivos de modelos (`best.pt` y `herdnet_model.pth`) se **descargarán automáticamente desde Google Drive** en la primera ejecución!
 
-### 2. Iniciar el Sistema
+Es importante que los archivos estén dentro de un folder publico de google drive, y que se configure la variable GDRIVE_FOLDER_ID en dicho folder
 
-**Opción A: Usando el script de inicio (Recomendado)**
-
-```bash
-# En Linux/Mac
-./start.sh
-
-# En Windows
-start.bat
-```
-
-**Opción B: Inicio manual (dos terminales)**
+**Opción A: Inicio manual (dos terminales)**
 
 Terminal 1 - Backend:
 ```bash
@@ -134,7 +131,7 @@ La interfaz web Streamlit proporciona una hermosa interfaz basada en tarjetas pa
 - **Detalles Plegables**: Mantén la interfaz limpia, expande cuando sea necesario
 - **Acciones Integradas**: Ver y descargar directamente desde las tarjetas
 
-Para más detalles, ver [`CARD_UI_DESIGN.md`](CARD_UI_DESIGN.md)
+
 
 ## 🔌 Endpoints de la API
 
@@ -345,8 +342,8 @@ Los modelos se descargan automáticamente desde Google Drive en la primera ejecu
 - ✅ Perfecto para despliegue en Streamlit Cloud
 
 **Archivos de Modelos:**
-- `best.pt` (YOLOv11) - ~300 MB
-- `herdnet_model.pth` (HerdNet) - ~250 MB
+- `best.pt` (YOLOv11) 
+- `herdnet_model.pth` (HerdNet) 
 
 ## 📊 Información de Modelos
 
@@ -367,7 +364,7 @@ Los modelos se descargan automáticamente desde Google Drive en la primera ejecu
 2. Elefante (*Loxodonta africana*)
 3. Kob (*Kobus kob*)
 4. Topi (*Damaliscus lunatus*)
-5. Jabalí Verrugoso (*Phacochoerus africanus*)
+5. Jabalí (*Phacochoerus africanus*)
 6. Antílope Acuático (*Kobus ellipsiprymnus*)
 
 ## 🛠️ Estructura del Proyecto
@@ -377,68 +374,277 @@ back/
 ├── app.py                    # API Flask principal
 ├── streamlit_app.py          # Interfaz web Streamlit
 ├── database.py               # Módulo de base de datos SQLite
-├── model_loader.py           # Descargador de modelos Google Drive
-├── test_api.py              # Script de prueba de API
-├── test_yolo_api.py         # Script de prueba YOLO
-├── start.sh                 # Script de inicio Unix
-├── start.bat                # Script de inicio Windows
+├── model_loader.py           # Script para descargar modelos desde Google Drive
 ├── requirements.txt         # Dependencias Python
-├── README.md               # Este archivo
+├── README.md               # Archivo de contexto del proyecto
 ├── best.pt                 # Modelo YOLOv11 (auto-descargado)
 ├── herdnet_model.pth      # Modelo HerdNet (auto-descargado)
 └── wildlife_detection.db  # Base de datos SQLite (auto-creada)
 ```
 
-## 🚀 Despliegue
+### Variables de entorno
 
-### Despliegue Local
-Usa los scripts de inicio para un fácil despliegue local:
-```bash
-./start.sh  # Linux/Mac
-start.bat   # Windows
+
+
+### 📝 Variables Requeridas - Backend
+
+#### 🔑 Configuración de Google Drive
+```env
+# ID de la carpeta de Google Drive donde están los modelos
+GDRIVE_FOLDER_ID=TU_CARPETA_PUBLICA_DE_GOOGLE_DRIVE
+
+
+# Nombres de los archivos de modelos
+YOLO_MODEL_FILENAME=best.pt
+HERDNET_MODEL_FILENAME=herdnet_baseline_model.pth
+```
+> **📌 Nota**: El `GDRIVE_FOLDER_ID` se encuentra en la URL de la carpeta de Google Drive:
+> `https://drive.google.com/drive/folders/[ESTE_ES_EL_ID]`
+
+#### 📂 Configuración de Archivos
+```env
+# Extensiones permitidas (sin comillas, sin espacios)
+ALLOWED_IMAGE_EXTENSIONS=png,jpg,jpeg,gif,webp,bmp
+ALLOWED_ZIP_EXTENSIONS=zip
+```
+⚠️ **IMPORTANTE**: 
+- ✅ Correcto: `png,jpg,jpeg`
+- ❌ Incorrecto: `'png,jpg,jpeg'` o `"png,jpg,jpeg"` o `['png','jpg']`
+
+
+### 📝 Variables Opcionales - Backend
+
+```env
+# Base de datos (opcional, por defecto: wildlife_detection.db)
+DATABASE_NAME=wildlife_detection.db
+
+# Tamaño máximo de archivo en MB (opcional)
+MAX_UPLOAD_SIZE_MB=200
+
+# Directorio temporal (opcional)
+TEMP_DIR=/tmp/wildlife_detection
 ```
 
-### Despliegue en la Nube
 
-El sistema tiene dos componentes que necesitan despliegue separado:
 
-1. **Backend Flask** → Railway, Heroku, o Render
-2. **Frontend Streamlit** → Streamlit Cloud (¡gratis!)
+### 📝 Variables Esenciales - Frontend
 
-**📖 Ver [STREAMLIT_DEPLOYMENT_GUIDE.md](STREAMLIT_DEPLOYMENT_GUIDE.md) para instrucciones detalladas paso a paso!**
+#### 🔗 Conexión con API
+```env
+# URL del backend Flask
+API_BASE_URL=http://localhost:8000
 
-Resumen rápido:
-- Usa `requirements-backend.txt` para el backend Flask
-- Usa `requirements-streamlit.txt` para el frontend Streamlit  
-- Configura `API_BASE_URL` en los secretos de Streamlit para apuntar a tu backend
-- Los modelos se auto-descargan desde Google Drive en la primera ejecución
+# Email del administrador
+ADMIN_EMAIL=info@grupo12.yolomodel.com
 
-### Docker
-El despliegue con Docker está soportado. Ver `Dockerfile` para configuración.
+# URLs de ayuda y documentación
+EXPLAIN_VIDEO_URL=https://example.com/tutorials
+DOCS_URL=https://example.com/docs
+```
 
-## 📝 Requisitos
+#### 🤖 Disponibilidad de Modelos
+```env
+# Habilitar/deshabilitar modelo HerdNet en la UI
+ENABLE_HERDNET=true
+```
 
-- Python 3.8+
-- PyTorch 2.0+
-- CUDA (opcional, para aceleración GPU)
-- 8GB+ RAM (16GB+ recomendado)
+### 📝 Variables de Interfaz (Opcionales)
 
-## 🐛 Solución de Problemas
+#### YOLOv11 - Configuración de UI
+```env
+# Sliders de confianza
+YOLO_CONF_MIN=0.1
+YOLO_CONF_MAX=0.9
+YOLO_CONF_DEFAULT=0.25
+YOLO_CONF_STEP=0.05
 
-### Los modelos no se descargan
-- Verificar conexión a internet
-- Verificar que la carpeta de Google Drive sea accesible
-- Verificar espacio en disco (necesitas ~600MB libres)
+# Sliders de IOU
+YOLO_IOU_MIN=0.1
+YOLO_IOU_MAX=0.9
+YOLO_IOU_DEFAULT=0.45
+YOLO_IOU_STEP=0.05
 
-### Sin memoria
-- Reducir `patch_size` (HerdNet) o `img_size` (YOLO)
-- Procesar menos imágenes a la vez
-- Deshabilitar miniaturas/gráficos
+# Opciones de tamaño de imagen
+YOLO_IMG_SIZES=416,480,640,800,960,1280,2560,5120,10240
+YOLO_IMG_SIZE_DEFAULT_INDEX=2
+```
 
-### Procesamiento lento
-- Habilitar aceleración GPU
-- Reducir superposición (HerdNet)
-- Establecer `include_annotated_images=false` (YOLO)
+#### HerdNet - Configuración de UI
+```env
+# Opciones de tamaño de parche
+HERDNET_PATCH_SIZES=384,512,768,1024,2048,4096,8192,16384
+HERDNET_PATCH_SIZE_DEFAULT_INDEX=1
+
+# Opciones de rotación
+HERDNET_ROTATION_OPTIONS=0,1,2,3
+HERDNET_ROTATION_DEFAULT_INDEX=0
+
+# Sliders de superposición
+HERDNET_OVERLAP_MIN=0
+HERDNET_OVERLAP_MAX=300
+HERDNET_OVERLAP_DEFAULT=160
+HERDNET_OVERLAP_STEP=16
+
+# Sliders de miniatura
+HERDNET_THUMBNAIL_MIN=128
+HERDNET_THUMBNAIL_MAX=512
+HERDNET_THUMBNAIL_DEFAULT=256
+HERDNET_THUMBNAIL_STEP=32
+```
+
+
+
+## Despliegue en la Nube
+
+
+### 📦 Requisitos Previos
+
+### Para Backend (Docker)
+
+#### Local
+```bash
+✅ Docker Engine 20.10+
+✅ Docker Compose 2.0+
+✅ 4GB RAM mínimo (8GB recomendado)
+✅ 10GB espacio en disco
+✅ Puerto 8000 disponible
+```
+
+#### Producción (AWS EC2)
+```bash
+✅ Instancia EC2 (t2.medium o superior)
+✅ Ubuntu 20.04/22.04 LTS
+✅ Docker y Docker Compose instalados
+✅ Security Group con puertos 22 (SSH) y 8000 (HTTP)
+✅ IP Elástica (recomendado)
+```
+
+### Para Frontend (Streamlit)
+
+#### Local
+```bash
+✅ Python 3.11+
+✅ pip o conda
+✅ Puerto 8501 disponible
+✅ Acceso a la API del backend
+```
+
+#### Streamlit Cloud
+```bash
+✅ Cuenta de GitHub
+✅ Repositorio público/privado
+✅ Cuenta de Streamlit Cloud (gratis)
+```
+
+
+---
+
+
+## 🐳 Backend con Docker
+
+### Opción 1: Despliegue Local (Desarrollo)
+
+#### Paso 1: Clonar Repositorio
+
+```bash
+# Clonar proyecto
+git clone https://github.com/marioguaqueta/maia-back-proyecto.git
+cd maia-back-proyecto
+```
+
+#### Paso 2: Configurar Variables de Entorno
+
+```bash
+# Copiar archivo de ejemplo
+cp env.example .env
+
+# Editar variables (opcional, hay valores por defecto)
+nano .env
+```
+
+**Variables mínimas requeridas:**
+```env
+# ID de la carpeta de Google Drive donde están los modelos
+GDRIVE_FOLDER_ID=TU_CARPETA_PUBLICA_DE_GOOGLE_DRIVE
+
+# Nombres de los archivos de modelos
+YOLO_MODEL_FILENAME=best.pt
+HERDNET_MODEL_FILENAME=herdnet_baseline_model.pth
+```
+
+
+#### Paso 3: Construir y Levantar Servicios
+
+```bash
+# Construir imagen Docker
+docker-compose build --no-cache
+
+# Iniciar servicios en segundo plano
+docker-compose up -d
+
+# Ver logs en tiempo real
+docker-compose logs -f
+```
+
+#### Paso 4: Verificar Despliegue
+
+```bash
+# Verificar que el contenedor esté corriendo
+docker-compose ps
+
+```
+---
+
+## 🎨 Frontend con Streamlit
+
+### Opción 1: Ejecución Local
+
+#### Paso 1: Instalar Dependencias
+
+```bash
+# Navegar al proyecto
+cd maia-back-proyecto
+
+# Crear entorno virtual (recomendado)
+python -m venv venv
+
+# Activar entorno virtual
+# Linux/Mac:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+
+# Instalar dependencias
+pip install -r requirements-streamlit.txt
+```
+
+#### Paso 2: Configurar Variables
+
+```bash
+# Copiar archivo de ejemplo
+cp .streamlit/env.example .streamlit/.env
+
+# Editar configuración
+nano .streamlit/.env
+
+API_BASE_URL=http://public_ip:8000
+```
+
+#### Paso 3: Ejecutar Streamlit
+
+```bash
+# Iniciar aplicación
+streamlit run streamlit_app.py
+
+# La aplicación se abrirá en:
+# http://localhost:8501
+```
+
+---
+## 📚 Manual de usuario aplicación cliente
+
+[Manual de usuario](https://github.com/MackieUni/Grupo12-ProyectoFinal/blob/main/docs/documentacion_app/MANUAL%20DE%20USUARIO%20DE%20SISTEMA%20DE%20DETECCI%C3%93N%20DE%20FAUNA%20AFRICANA.pdf)
+
 
 ## 📚 Citas
 
