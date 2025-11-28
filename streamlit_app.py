@@ -1044,6 +1044,12 @@ def display_results(result, model_choice, file_type='zip'):
     
     # ID de tarea
     st.info(f"📋 ID de Tarea: `{result.get('task_id', 'N/A')}` - ¡Guarda esto para recuperar resultados después!")
+
+    # Si no hay detecciones, mostrar mensaje y salir
+    if result.get('summary', {}).get('total_detections', 0) == 0:
+        st.warning(" No se encontraron detecciones")
+        st.info("No se encontraron detecciones en el archivo subido. Por favor intenta nuevamente con diferentes parámetros o un archivo diferente.")
+        
     
     # Estadísticas resumen
     st.subheader("📊 Resumen")
