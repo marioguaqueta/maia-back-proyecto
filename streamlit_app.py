@@ -1303,11 +1303,12 @@ def about_page():
     
     # Add HerdNet citation if enabled
     models_section += f"""
-    **Implementación de Arquitecturas de Aprendizaje Profundo para Detección y Conteo Automatizado de Fauna en Levantamientos Aéreos:**
+    **Artículo académico**
     ```
+    Implementación de Arquitecturas de Aprendizaje Profundo para Detección y Conteo Automatizado de Fauna en Levantamientos Aéreos:
     Rondón, I., Ortiz, D., Guaquetá, J. P., Trujillo, D. (2025).
-    **- Documento en línea:** [Enlace al Artículo]({PAPER_URL})
     ```
+    **- Documento en línea:** [Enlace al Artículo]({PAPER_URL})
 
     **HerdNet:**
     ```
