@@ -17,7 +17,7 @@ services:
       - YOLO_MODEL_FILENAME=${YOLO_MODEL_FILENAME:-best2.pt}
       - HERDNET_MODEL_FILENAME=${HERDNET_MODEL_FILENAME:-herdnet_baseline_model2.pth}
       # File upload configuration (optional - defaults are provided)
-      - ALLOWED_IMAGE_EXTENSIONS=${ALLOWED_IMAGE_EXTENSIONS:-png,jpg,jpeg,JPG,JPEG,gif,webp,bmp}
+      - ALLOWED_IMAGE_EXTENSIONS=${ALLOWED_IMAGE_EXTENSIONS:-png,jpg,jpeg,JPG,JPEG}
       - ALLOWED_ZIP_EXTENSIONS=${ALLOWED_ZIP_EXTENSIONS:-zip}
     volumes:
       # Optional: Mount directories for persistent data

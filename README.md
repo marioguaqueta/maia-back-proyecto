@@ -9,7 +9,7 @@ Este proyecto ofrece un API REST basada en Flask (Python) para detectar, contar 
 - 📍 **Detección HerdNet**: Detección precisa basada en puntos optimizada para imágenes aéreas
 - 🗺️ **Soporte para Imágenes Grandes**: Procesa imágenes satelitales grandes (6000x4000+) usando unión inteligente
 - 📦 **Procesamiento por Lotes**: Sube archivos ZIP con múltiples imágenes para análisis por lotes hasta 100 MB
-- 🖼️ **Análisis de Imagen Individual**: Sube imágenes individuales (PNG, JPG, GIF, WebP, BMP, TIFF) para pruebas rápidas
+- 🖼️ **Análisis de Imagen Individual**: Sube imágenes individuales (PNG, JPG y JPEG) para pruebas rápidas
 - ⚡ **Entrada Flexible**: Elige entre ZIP (lotes) o imagen individual según tus necesidades
 
 ### Gestión de Datos
@@ -55,7 +55,7 @@ pip install git+https://github.com/Alexandre-Delplanque/HerdNet.git
 
 Es importante que los archivos estén dentro de un folder publico de google drive, y que se configure la variable GDRIVE_FOLDER_ID en dicho folder
 
-**Opción A: Inicio manual (dos terminales)**
+**Opción A: Inicio manual (dos terminales) para uso local**
 
 Terminal 1 - Backend:
 ```bash
@@ -118,6 +118,11 @@ La interfaz web Streamlit proporciona una hermosa interfaz basada en tarjetas pa
 - Gráficos de distribución de especies
 - Tendencias de análisis en el tiempo
 - Comparación de uso de modelos
+
+### 📚 Página Ayuda
+- Preguntas frecuentes
+- Materia de apoyo
+- Documentación disponible en línea
 
 ### ℹ️ Página Acerca de
 - Información y comparaciones de modelos
@@ -419,7 +424,7 @@ ALLOWED_ZIP_EXTENSIONS=zip
 DATABASE_NAME=wildlife_detection.db
 
 # Tamaño máximo de archivo en MB (opcional)
-MAX_UPLOAD_SIZE_MB=200
+MAX_UPLOAD_SIZE_MB=100
 
 # Directorio temporal (opcional)
 TEMP_DIR=/tmp/wildlife_detection
