@@ -82,12 +82,12 @@ HERDNET_THUMBNAIL_STEP = int(os.getenv("HERDNET_THUMBNAIL_STEP", "32"))
 # Image Zoom Configuration
 # ========================================
 # Zoom Control Parameters
-# Image Zoom Configuration
-# -------------------------
-# Zoom is now handled by Plotly's built-in interactive controls
-# No environment variables needed - users can zoom with mouse wheel, pan with drag,
-# and double-click to reset. Plotly provides native zoom/pan controls.
-# Previous slider-based zoom has been replaced with Plotly's superior interactive zoom.
+# Image Zoom Configuration with Plotly
+# -------------------------------------
+# Plotly provides interactive zoom/pan controls
+# To avoid WebSocket overload with large images, we downsample for display
+PLOTLY_MAX_DIMENSION = int(os.getenv("PLOTLY_MAX_DIMENSION", "1500"))  # Max width or height for Plotly display
+PLOTLY_FALLBACK_THRESHOLD = int(os.getenv("PLOTLY_FALLBACK_THRESHOLD", "3000"))  # Use st.image for images larger than this
 
 # Configuración de página
 st.set_page_config(
@@ -514,6 +514,57 @@ def create_detections_table(result, model_choice):
     return df
 
 
+def prepare_image_for_plotly(img, max_dimension=None):
+    """
+    Prepara una imagen PIL para visualización en Plotly.
+    Reduce el tamaño si es necesario para evitar sobrecargar WebSocket.
+    
+    Args:
+        img: PIL Image
+        max_dimension: Dimensión máxima permitida (ancho o alto)
+    
+    Returns:
+        tuple: (img_resized, was_resized, original_size, display_size)
+    """
+    if max_dimension is None:
+        max_dimension = PLOTLY_MAX_DIMENSION
+    
+    original_width, original_height = img.size
+    
+    # Verificar si necesita redimensionamiento
+    max_current = max(original_width, original_height)
+    
+    if max_current <= max_dimension:
+        # No necesita redimensionamiento
+        return img, False, (original_width, original_height), (original_width, original_height)
+    
+    # Calcular nuevas dimensiones manteniendo proporción
+    scale = max_dimension / max_current
+    new_width = int(original_width * scale)
+    new_height = int(original_height * scale)
+    
+    # Redimensionar imagen para display
+    img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    
+    return img_resized, True, (original_width, original_height), (new_width, new_height)
+
+
+def should_use_plotly(img):
+    """
+    Determina si se debe usar Plotly o fallback a st.image.
+    Imágenes muy grandes pueden sobrecargar WebSocket.
+    
+    Args:
+        img: PIL Image
+    
+    Returns:
+        bool: True si debe usar Plotly, False para usar st.image
+    """
+    width, height = img.size
+    max_dim = max(width, height)
+    return max_dim < PLOTLY_FALLBACK_THRESHOLD
+
+
 @st.dialog("Visor de Imagen con Zoom", width="large")
 def show_image_modal(img_data, img_name, model_type):
     """Mostrar imagen en un modal con capacidades de zoom interactivo usando Plotly."""
@@ -537,40 +588,52 @@ def show_image_modal(img_data, img_name, model_type):
     # Instrucciones de zoom interactivo
     st.info("🔍 **Controles interactivos:** Usa la rueda del ratón para zoom, arrastra para desplazar, doble clic para resetear")
     
-    # Convertir a array numpy para Plotly
-    img_array = np.array(img)
-    
-    # Crear figura Plotly con zoom interactivo
-    fig = go.Figure()
-    fig.add_trace(go.Image(z=img_array))
-    
-    # Configurar layout para zoom interactivo
-    fig.update_layout(
-        margin=dict(l=0, r=0, t=0, b=0),
-        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-        yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-        dragmode='pan',
-        hovermode=False,
-        height=700
-    )
-    
-    # Configurar para permitir zoom y pan
-    config = {
-        'scrollZoom': True,
-        'displayModeBar': True,
-        'displaylogo': False,
-        'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
-        'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
-        'toImageButtonOptions': {
-            'format': 'png',
-            'filename': img_name,
-            'height': height,
-            'width': width,
-            'scale': 1
+    # Verificar si usar Plotly o fallback
+    if should_use_plotly(img):
+        # Preparar imagen para Plotly (downsample si es necesario)
+        img_display, was_resized, orig_size, display_size = prepare_image_for_plotly(img, max_dimension=2000)
+        
+        # Convertir a array numpy para Plotly
+        img_array = np.array(img_display)
+        
+        # Crear figura Plotly con zoom interactivo
+        fig = go.Figure()
+        fig.add_trace(go.Image(z=img_array))
+        
+        # Configurar layout para zoom interactivo
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+            xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+            yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+            dragmode='pan',
+            hovermode=False,
+            height=600
+        )
+        
+        # Configurar para permitir zoom y pan
+        config = {
+            'scrollZoom': True,
+            'displayModeBar': True,
+            'displaylogo': False,
+            'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+            'toImageButtonOptions': {
+                'format': 'png',
+                'filename': img_name,
+                'height': display_size[1],
+                'width': display_size[0],
+                'scale': 1
+            }
         }
-    }
-    
-    st.plotly_chart(fig, use_container_width=True, config=config)
+        
+        st.plotly_chart(fig, use_container_width=True, config=config)
+        
+        # Mostrar información de dimensiones
+        if was_resized:
+            st.caption(f"📐 Visualizando a {display_size[0]}×{display_size[1]}px para mejor rendimiento")
+    else:
+        # Imagen muy grande: usar st.image con advertencia
+        st.warning(f"⚠️ Imagen muy grande ({width}×{height}px). Usando visor estático para mejor rendimiento.")
+        st.image(img, use_column_width=True)
     
     # Botón de descarga
     st.markdown("---")
@@ -616,8 +679,71 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
                 original_bytes = base64.b64decode(img_data['original_image_base64'])
                 original_img = Image.open(BytesIO(original_bytes))
                 
+                # Verificar si usar Plotly o fallback
+                if should_use_plotly(original_img):
+                    # Preparar imagen para Plotly (downsample si es necesario)
+                    img_display, was_resized, orig_size, display_size = prepare_image_for_plotly(original_img)
+                    
+                    # Convertir a array numpy para Plotly
+                    img_array = np.array(img_display)
+                    
+                    # Crear figura Plotly con zoom interactivo
+                    fig = go.Figure()
+                    fig.add_trace(go.Image(z=img_array))
+                    
+                    # Configurar layout para zoom interactivo
+                    fig.update_layout(
+                        margin=dict(l=0, r=0, t=0, b=0),
+                        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                        yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                        dragmode='pan',
+                        hovermode=False,
+                        height=400
+                    )
+                    
+                    # Configurar para permitir zoom y pan
+                    config = {
+                        'scrollZoom': True,
+                        'displayModeBar': True,
+                        'displaylogo': False,
+                        'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+                        'toImageButtonOptions': {
+                            'format': 'png',
+                            'filename': f'original_{img_data["image_name"]}',
+                            'height': display_size[1],
+                            'width': display_size[0],
+                            'scale': 1
+                        }
+                    }
+                    
+                    st.plotly_chart(fig, use_container_width=True, config=config)
+                    
+                    # Mostrar información de dimensiones
+                    if was_resized:
+                        st.caption(f"📐 Original: {orig_size[0]}×{orig_size[1]}px | Visualización: {display_size[0]}×{display_size[1]}px")
+                    else:
+                        st.caption(f"📐 Dimensiones: {orig_size[0]} × {orig_size[1]} px")
+                else:
+                    # Imagen muy grande: usar st.image con advertencia
+                    st.warning(f"⚠️ Imagen grande ({original_img.width}×{original_img.height}px). Usando visor estático.")
+                    st.image(original_img, use_column_width=True)
+                    st.caption(f"📐 Dimensiones: {original_img.width} × {original_img.height} px")
+            else:
+                st.info("Imagen original no disponible")
+        
+        # Columna derecha: Imagen Anotada
+        with col2:
+            st.markdown("**🎯 Imagen Con Detecciones**")
+            img_bytes = base64.b64decode(img_data['annotated_image_base64'])
+            img = Image.open(BytesIO(img_bytes))
+            
+            # Verificar si usar Plotly o fallback
+            if should_use_plotly(img):
+                # Preparar imagen para Plotly (downsample si es necesario)
+                img_display, was_resized, orig_size, display_size = prepare_image_for_plotly(img)
+                
                 # Convertir a array numpy para Plotly
-                img_array = np.array(original_img)
+                img_array = np.array(img_display)
                 
                 # Crear figura Plotly con zoom interactivo
                 fig = go.Figure()
@@ -630,7 +756,7 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
                     yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
                     dragmode='pan',
                     hovermode=False,
-                    height=500
+                    height=400
                 )
                 
                 # Configurar para permitir zoom y pan
@@ -638,63 +764,28 @@ def render_yolo_image_card(img_data, all_detections, img_idx):
                     'scrollZoom': True,
                     'displayModeBar': True,
                     'displaylogo': False,
-                    'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
                     'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
                     'toImageButtonOptions': {
                         'format': 'png',
-                        'filename': f'original_{img_data["image_name"]}',
-                        'height': original_img.height,
-                        'width': original_img.width,
+                        'filename': f'annotated_{img_data["image_name"]}',
+                        'height': display_size[1],
+                        'width': display_size[0],
                         'scale': 1
                     }
                 }
                 
                 st.plotly_chart(fig, use_container_width=True, config=config)
-                st.caption(f"📐 Dimensiones: {original_img.width} × {original_img.height} px")
+                
+                # Mostrar información de dimensiones
+                if was_resized:
+                    st.caption(f"📐 Original: {orig_size[0]}×{orig_size[1]}px | Visualización: {display_size[0]}×{display_size[1]}px")
+                else:
+                    st.caption(f"📐 Dimensiones: {orig_size[0]} × {orig_size[1]} px")
             else:
-                st.info("Imagen original no disponible")
-        
-        # Columna derecha: Imagen Anotada
-        with col2:
-            st.markdown("**🎯 Imagen Con Detecciones**")
-            img_bytes = base64.b64decode(img_data['annotated_image_base64'])
-            img = Image.open(BytesIO(img_bytes))
-            
-            # Convertir a array numpy para Plotly
-            img_array = np.array(img)
-            
-            # Crear figura Plotly con zoom interactivo
-            fig = go.Figure()
-            fig.add_trace(go.Image(z=img_array))
-            
-            # Configurar layout para zoom interactivo
-            fig.update_layout(
-                margin=dict(l=0, r=0, t=0, b=0),
-                xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-                yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-                dragmode='pan',
-                hovermode=False,
-                height=500
-            )
-            
-            # Configurar para permitir zoom y pan
-            config = {
-                'scrollZoom': True,
-                'displayModeBar': True,
-                'displaylogo': False,
-                'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
-                'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
-                'toImageButtonOptions': {
-                    'format': 'png',
-                    'filename': f'annotated_{img_data["image_name"]}',
-                    'height': img.height,
-                    'width': img.width,
-                    'scale': 1
-                }
-            }
-            
-            st.plotly_chart(fig, use_container_width=True, config=config)
-            st.caption(f"📐 Dimensiones: {img.width} × {img.height} px")
+                # Imagen muy grande: usar st.image con advertencia
+                st.warning(f"⚠️ Imagen grande ({img.width}×{img.height}px). Usando visor estático.")
+                st.image(img, use_column_width=True)
+                st.caption(f"📐 Dimensiones: {img.width} × {img.height} px")
         
         # Obtener detecciones para esta imagen
         image_detections = [d for d in all_detections if d.get('image') == img_data['image_name']]
@@ -753,8 +844,71 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
                 original_bytes = base64.b64decode(plot_data['original_image_base64'])
                 original_img = Image.open(BytesIO(original_bytes))
                 
+                # Verificar si usar Plotly o fallback
+                if should_use_plotly(original_img):
+                    # Preparar imagen para Plotly (downsample si es necesario)
+                    img_display, was_resized, orig_size, display_size = prepare_image_for_plotly(original_img)
+                    
+                    # Convertir a array numpy para Plotly
+                    img_array = np.array(img_display)
+                    
+                    # Crear figura Plotly con zoom interactivo
+                    fig = go.Figure()
+                    fig.add_trace(go.Image(z=img_array))
+                    
+                    # Configurar layout para zoom interactivo
+                    fig.update_layout(
+                        margin=dict(l=0, r=0, t=0, b=0),
+                        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                        yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+                        dragmode='pan',
+                        hovermode=False,
+                        height=400
+                    )
+                    
+                    # Configurar para permitir zoom y pan
+                    config = {
+                        'scrollZoom': True,
+                        'displayModeBar': True,
+                        'displaylogo': False,
+                        'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+                        'toImageButtonOptions': {
+                            'format': 'png',
+                            'filename': f'original_{plot_data["image_name"]}',
+                            'height': display_size[1],
+                            'width': display_size[0],
+                            'scale': 1
+                        }
+                    }
+                    
+                    st.plotly_chart(fig, use_container_width=True, config=config)
+                    
+                    # Mostrar información de dimensiones
+                    if was_resized:
+                        st.caption(f"📐 Original: {orig_size[0]}×{orig_size[1]}px | Visualización: {display_size[0]}×{display_size[1]}px")
+                    else:
+                        st.caption(f"📐 Dimensiones: {orig_size[0]} × {orig_size[1]} px")
+                else:
+                    # Imagen muy grande: usar st.image con advertencia
+                    st.warning(f"⚠️ Imagen grande ({original_img.width}×{original_img.height}px). Usando visor estático.")
+                    st.image(original_img, use_column_width=True)
+                    st.caption(f"📐 Dimensiones: {original_img.width} × {original_img.height} px")
+            else:
+                st.info("Imagen original no disponible")
+        
+        # Columna derecha: Gráfico con Detecciones
+        with col2:
+            st.markdown("**🎯 Imagen Con Detecciones**")
+            img_bytes = base64.b64decode(plot_data['plot_base64'])
+            img = Image.open(BytesIO(img_bytes))
+            
+            # Verificar si usar Plotly o fallback
+            if should_use_plotly(img):
+                # Preparar imagen para Plotly (downsample si es necesario)
+                img_display, was_resized, orig_size, display_size = prepare_image_for_plotly(img)
+                
                 # Convertir a array numpy para Plotly
-                img_array = np.array(original_img)
+                img_array = np.array(img_display)
                 
                 # Crear figura Plotly con zoom interactivo
                 fig = go.Figure()
@@ -767,7 +921,7 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
                     yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
                     dragmode='pan',
                     hovermode=False,
-                    height=500
+                    height=400
                 )
                 
                 # Configurar para permitir zoom y pan
@@ -775,63 +929,28 @@ def render_herdnet_image_card(plot_data, all_detections, plot_idx):
                     'scrollZoom': True,
                     'displayModeBar': True,
                     'displaylogo': False,
-                    'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
                     'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
                     'toImageButtonOptions': {
                         'format': 'png',
-                        'filename': f'original_{plot_data["image_name"]}',
-                        'height': original_img.height,
-                        'width': original_img.width,
+                        'filename': f'annotated_{plot_data["image_name"]}',
+                        'height': display_size[1],
+                        'width': display_size[0],
                         'scale': 1
                     }
                 }
                 
                 st.plotly_chart(fig, use_container_width=True, config=config)
-                st.caption(f"📐 Dimensiones: {original_img.width} × {original_img.height} px")
+                
+                # Mostrar información de dimensiones
+                if was_resized:
+                    st.caption(f"📐 Original: {orig_size[0]}×{orig_size[1]}px | Visualización: {display_size[0]}×{display_size[1]}px")
+                else:
+                    st.caption(f"📐 Dimensiones: {orig_size[0]} × {orig_size[1]} px")
             else:
-                st.info("Imagen original no disponible")
-        
-        # Columna derecha: Gráfico con Detecciones
-        with col2:
-            st.markdown("**🎯 Imagen Con Detecciones**")
-            img_bytes = base64.b64decode(plot_data['plot_base64'])
-            img = Image.open(BytesIO(img_bytes))
-            
-            # Convertir a array numpy para Plotly
-            img_array = np.array(img)
-            
-            # Crear figura Plotly con zoom interactivo
-            fig = go.Figure()
-            fig.add_trace(go.Image(z=img_array))
-            
-            # Configurar layout para zoom interactivo
-            fig.update_layout(
-                margin=dict(l=0, r=0, t=0, b=0),
-                xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-                yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-                dragmode='pan',
-                hovermode=False,
-                height=500
-            )
-            
-            # Configurar para permitir zoom y pan
-            config = {
-                'scrollZoom': True,
-                'displayModeBar': True,
-                'displaylogo': False,
-                'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
-                'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
-                'toImageButtonOptions': {
-                    'format': 'png',
-                    'filename': f'annotated_{plot_data["image_name"]}',
-                    'height': img.height,
-                    'width': img.width,
-                    'scale': 1
-                }
-            }
-            
-            st.plotly_chart(fig, use_container_width=True, config=config)
-            st.caption(f"📐 Dimensiones: {img.width} × {img.height} px")
+                # Imagen muy grande: usar st.image con advertencia
+                st.warning(f"⚠️ Imagen grande ({img.width}×{img.height}px). Usando visor estático.")
+                st.image(img, use_column_width=True)
+                st.caption(f"📐 Dimensiones: {img.width} × {img.height} px")
         
         # Obtener detecciones para esta imagen
         image_detections = [d for d in all_detections if d.get('images') == plot_data['image_name']]
