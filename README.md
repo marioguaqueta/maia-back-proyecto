@@ -57,6 +57,10 @@ Es importante que los archivos estén dentro de un folder publico de google driv
 
 **Opción A: Inicio manual (dos terminales) para uso local**
 
+Crear archivos de configuración
+`.env` y `.streamlit/.env` según las instrucciones en la sección de Variables de Entorno, seguir la plantilla en ./env.example y ./.streamlit/env.example
+
+
 Terminal 1 - Backend:
 ```bash
 python app.py
