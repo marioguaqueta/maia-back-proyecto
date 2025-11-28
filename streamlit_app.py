@@ -30,6 +30,16 @@ ADMIN_EMAIL = os.getenv(
     st.secrets.get("ADMIN_EMAIL", "info@grupo12.yolomodel.com")
 )
 
+EXPLAIN_VIDEO_URL = os.getenv(
+    "EXPLAIN_VIDEO_URL",
+    st.secrets.get("EXPLAIN_VIDEO_URL", "https://example.com/tutorials")
+)
+
+DOCS_URL = os.getenv(
+    "DOCS_URL",
+    st.secrets.get("DOCS_URL", "https://example.com/docs")
+)
+
 # ========================================
 # YOLOv11 UI Configuration
 # ========================================
@@ -232,12 +242,12 @@ st.markdown("""
 def main():
     """Aplicación principal de Streamlit."""
     st.title("🦁 Sistema de Detección de Fauna Africana")
-    st.markdown("Impulsado por modelos de aprendizaje profundo YOLOv11 y HerdNet")
+    st.markdown(f"Impulsado por modelos de aprendizaje profundo YOLOv11 {'y HerdNet' if ENABLE_HERDNET else ''}")
     
     # Navegación en la barra lateral
     page = st.sidebar.selectbox(
         "Navegación",
-        ["🎯 Nuevo Análisis", "📊 Ver Resultados", "📈 Estadísticas", "ℹ️ Acerca de"]
+        ["🎯 Nuevo Análisis", "📊 Ver Resultados", "📈 Estadísticas", "📚 Ayuda", "ℹ️ Acerca de"]
     )
     
     if page == "🎯 Nuevo Análisis":
@@ -246,6 +256,8 @@ def main():
         view_results_page()
     elif page == "📈 Estadísticas":
         statistics_page()
+    elif page == "📚 Ayuda":
+        help_page()
     elif page == "ℹ️ Acerca de":
         about_page()
 
@@ -1186,6 +1198,39 @@ def statistics_page():
     except Exception as e:
         st.error(f"Error: {str(e)}")
 
+
+def help_page():    
+    """Página de ayuda con preguntas frecuentes."""
+    st.header("❓ Ayuda y Preguntas Frecuentes")
+    
+    faq_content = f"""
+    ## Preguntas Frecuentes
+    
+    **1. ¿Qué tipos de archivos puedo subir?**  
+    Puedes subir imágenes individuales en formatos JPEG, PNG o archivos ZIP que contengan múltiples imágenes.
+
+    **2. ¿Cuánto tiempo tarda el análisis?**  
+    El tiempo de análisis depende del tamaño y número de imágenes, así como del modelo seleccionado. Generalmente, toma entre unos segundos a varios minutos.
+
+    **3. ¿Cómo interpreto los resultados?**  
+    Los resultados incluyen un resumen de detecciones, gráficos de distribución de especies y tarjetas de imágenes anotadas con detecciones resaltadas.
+
+    **4. ¿Puedo descargar las imágenes anotadas?**  
+    Sí, puedes descargar las imágenes anotadas directamente desde la interfaz después del análisis.
+
+    **5. ¿Qué hago si encuentro un error?**  
+    Si encuentras un error, por favor contacta al administrador de la plataforma al {ADMIN_EMAIL} con detalles del problema.
+    
+    ## Materiales de apoyo
+    **- Documentación en línea:** [Enlace a la documentación]({DOCS_URL})  
+    **- Tutoriales en video:** [Enlace a los tutoriales]({EXPLAIN_VIDEO_URL})  
+
+    ## Soporte Adicional
+    
+    Para soporte adicional, consulta la documentación en línea o contacta al equipo de soporte.
+    """
+    
+    st.markdown(faq_content)
 
 def about_page():
     """Página acerca de con información de modelos."""
