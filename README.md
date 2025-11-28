@@ -33,7 +33,7 @@ Nuestro proecto se basa en una API REST basada en Flask para detectar y analizar
 
 ```bash
 # Clonar el repositorio
-git clone <repository-url>
+git clone https://github.com/marioguaqueta/maia-back-proyecto.git
 cd maia-back-proyecto
 
 # Crear entorno virtual
@@ -389,10 +389,9 @@ back/
 
 El sistema tiene dos componentes que necesitan despliegue separado:
 
-1. **Backend Flask** → Railway, Heroku, o Render
+1. **Backend Flask** → AWS, Railway, Heroku, o Render
 2. **Frontend Streamlit** → Streamlit Cloud (¡gratis!)
 
-**📖 Ver [STREAMLIT_DEPLOYMENT_GUIDE.md](STREAMLIT_DEPLOYMENT_GUIDE.md) para instrucciones detalladas paso a paso!**
 
 Resumen rápido:
 - Usa `requirements-backend.txt` para el backend Flask
