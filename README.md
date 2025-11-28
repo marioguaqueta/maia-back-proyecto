@@ -495,17 +495,105 @@ HERDNET_THUMBNAIL_STEP=32
 
 
 
-### Despliegue en la Nube
-
-El sistema tiene dos componentes que necesitan despliegue separado:
-
-1. **Backend Flask** → AWS, Railway, Heroku, o Render
-2. **Frontend Streamlit** → Streamlit Cloud (¡gratis!)
+## Despliegue en la Nube
 
 
+### 📦 Requisitos Previos
+
+### Para Backend (Docker)
+
+#### Local
+```bash
+✅ Docker Engine 20.10+
+✅ Docker Compose 2.0+
+✅ 4GB RAM mínimo (8GB recomendado)
+✅ 10GB espacio en disco
+✅ Puerto 8000 disponible
+```
+
+#### Producción (AWS EC2)
+```bash
+✅ Instancia EC2 (t2.medium o superior)
+✅ Ubuntu 20.04/22.04 LTS
+✅ Docker y Docker Compose instalados
+✅ Security Group con puertos 22 (SSH) y 8000 (HTTP)
+✅ IP Elástica (recomendado)
+```
+
+### Para Frontend (Streamlit)
+
+#### Local
+```bash
+✅ Python 3.11+
+✅ pip o conda
+✅ Puerto 8501 disponible
+✅ Acceso a la API del backend
+```
+
+#### Streamlit Cloud
+```bash
+✅ Cuenta de GitHub
+✅ Repositorio público/privado
+✅ Cuenta de Streamlit Cloud (gratis)
+```
 
 
+---
 
+
+## 🐳 Backend con Docker
+
+### Opción 1: Despliegue Local (Desarrollo)
+
+#### Paso 1: Clonar Repositorio
+
+```bash
+# Clonar proyecto
+git clone https://github.com/tu-usuario/tu-proyecto.git
+cd tu-proyecto
+```
+
+#### Paso 2: Configurar Variables de Entorno
+
+```bash
+# Copiar archivo de ejemplo
+cp env.example .env
+
+# Editar variables (opcional, hay valores por defecto)
+nano .env
+```
+
+**Variables mínimas requeridas:**
+```env
+# ID de la carpeta de Google Drive donde están los modelos
+GDRIVE_FOLDER_ID=TU_CARPETA_PUBLICA_DE_GOOGLE_DRIVE
+
+# Nombres de los archivos de modelos
+YOLO_MODEL_FILENAME=best.pt
+HERDNET_MODEL_FILENAME=herdnet_baseline_model.pth
+```
+
+
+#### Paso 3: Construir y Levantar Servicios
+
+```bash
+# Construir imagen Docker
+docker-compose build
+
+# Iniciar servicios en segundo plano
+docker-compose up -d
+
+# Ver logs en tiempo real
+docker-compose logs -f
+```
+
+#### Paso 4: Verificar Despliegue
+
+```bash
+# Verificar que el contenedor esté corriendo
+docker-compose ps
+
+---
 ## 📚 Manual de usuario aplicación cliente
 
 [Manual de usuario](https://github.com/MackieUni/Grupo12-ProyectoFinal/blob/main/docs/documentacion_app/MANUAL%20DE%20USUARIO%20DE%20SISTEMA%20DE%20DETECCI%C3%93N%20DE%20FAUNA%20AFRICANA.pdf)
