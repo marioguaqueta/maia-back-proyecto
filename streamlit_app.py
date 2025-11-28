@@ -109,10 +109,29 @@ st.set_page_config(
 # CSS personalizado
 st.markdown("""
 <style>
+/* Usar todo el ancho de la página */
 .stApp {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
 }
+
+/* Remover padding adicional del contenedor principal */
+.main .block-container {
+    max-width: 100%;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-top: 2rem;
+}
+
+/* Ajustar para pantallas muy pequeñas */
+@media (max-width: 768px) {
+    .main .block-container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
 .upload-section {
     padding: 2rem;
     border-radius: 10px;

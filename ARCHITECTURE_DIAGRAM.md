@@ -214,69 +214,106 @@ graph LR
 
 ---
 
-## 5. Flujo de Despliegue
+## 5. Flujo de Despliegue CI/CD
 
 ```mermaid
 graph TD
-    Start([Iniciar Despliegue])
+    Start([Desarrollador hace Push])
     
-    subgraph "Despliegue Backend (EC2)"
-        B1[Subir código a GitHub]
-        B2[SSH a instancia EC2]
-        B3[Obtener código más reciente]
-        B4[Construir imagen Docker]
-        B5[Ejecutar docker-compose up]
-        B6[Modelos se descargan de GDrive]
-        B7[Base de datos se inicializa]
-        B8[Backend listo en puerto 8000]
+    subgraph "GitHub Repository"
+        Push[Git Push a main/master]
+        Trigger{¿Cambios en<br/>backend?}
     end
     
-    subgraph "Despliegue Frontend (Streamlit Cloud)"
-        F1[Subir código a GitHub]
-        F2[Iniciar sesión en Streamlit Cloud]
-        F3[Crear/Actualizar app]
-        F4[Configurar ajustes<br/>- Python 3.11<br/>- requirements-streamlit.txt]
-        F5[Establecer secretos<br/>API_BASE_URL]
-        F6[Desplegar app]
-        F7[Frontend listo en 8501]
+    subgraph "GitHub Actions Workflow"
+        GHA1[🔄 Iniciar Workflow<br/>Deploy to AWS EC2]
+        GHA2[✅ Checkout código]
+        GHA3[🔑 Setup SSH<br/>Configurar clave EC2]
+        GHA4[📦 Rsync archivos<br/>Copiar a EC2]
+        GHA5[🐳 Docker Stop<br/>Detener contenedores]
+        GHA6[🧹 Docker Prune<br/>Limpiar recursos]
+        GHA7[🔨 Docker Build<br/>Construir imagen]
+        GHA8[🚀 Docker Up<br/>Iniciar servicios]
+        GHA9[⏳ Esperar 15s<br/>Servicio arrancando]
+        GHA10[🩺 Health Check<br/>Verificar puerto 8000]
+        GHA11{¿Health OK?}
+        GHA12[✅ Notificar Éxito]
+        GHA13[❌ Notificar Fallo]
+        GHA14[🧽 Cleanup<br/>Eliminar claves SSH]
     end
     
-    Start --> B1
-    Start --> F1
+    subgraph "AWS EC2 Instance"
+        EC2Deploy[📁 /home/ubuntu/maia-back-proyecto]
+        EC2Docker[🐳 Docker Compose<br/>- Build imagen<br/>- Iniciar contenedor]
+        EC2Models[📥 Descargar modelos<br/>Google Drive]
+        EC2DB[💾 Inicializar BD SQLite]
+        EC2Service[🚀 Backend Flask<br/>Puerto: 8000]
+    end
     
-    B1 --> B2
-    B2 --> B3
-    B3 --> B4
-    B4 --> B5
-    B5 --> B6
-    B6 --> B7
-    B7 --> B8
+    subgraph "Streamlit Cloud - Frontend"
+        F1[🔄 Auto-detectar cambios<br/>en GitHub]
+        F2[🔨 Rebuild automático]
+        F3[🚀 Deploy frontend]
+        F4[🌐 Frontend listo<br/>Puerto: 8501]
+    end
+    
+    Start --> Push
+    Push --> Trigger
+    
+    Trigger -->|Sí| GHA1
+    Trigger -->|No<br/>Solo frontend/docs| F1
+    
+    GHA1 --> GHA2
+    GHA2 --> GHA3
+    GHA3 --> GHA4
+    GHA4 --> EC2Deploy
+    
+    EC2Deploy --> GHA5
+    GHA5 --> GHA6
+    GHA6 --> GHA7
+    GHA7 --> EC2Docker
+    
+    EC2Docker --> EC2Models
+    EC2Models --> EC2DB
+    EC2DB --> GHA8
+    
+    GHA8 --> GHA9
+    GHA9 --> GHA10
+    GHA10 --> GHA11
+    
+    GHA11 -->|Sí| GHA12
+    GHA11 -->|No| GHA13
+    
+    GHA12 --> GHA14
+    GHA13 --> GHA14
+    
+    GHA12 --> EC2Service
     
     F1 --> F2
     F2 --> F3
     F3 --> F4
-    F4 --> F5
-    F5 --> F6
-    F6 --> F7
     
-    B8 --> Connected{Backend <-> Frontend<br/>¿Conectado?}
-    F7 --> Connected
+    EC2Service --> Connected{Backend <-> Frontend<br/>¿Conectado?}
+    F4 --> Connected
     
-    Connected -->|Sí| Success([✅ Despliegue Completo])
-    Connected -->|No| Debug[Depurar conexión<br/>Verificar API_BASE_URL<br/>Verificar grupos de seguridad]
-    Debug --> Connected
+    Connected -->|Sí| Success([✅ Despliegue Completo<br/>Sistema Listo])
+    Connected -->|No| Debug[🐛 Revisar logs<br/>Verificar conexión]
+    Debug --> GHA10
     
-    style B1 fill:#ffecb3
-    style B8 fill:#c8e6c9
-    style F1 fill:#e1bee7
-    style F7 fill:#b2dfdb
-    style Success fill:#81c784
+    style GHA1 fill:#4CAF50
+    style GHA12 fill:#81c784
+    style GHA13 fill:#e57373
+    style EC2Docker fill:#2196F3
+    style EC2Service fill:#ff9800
+    style F4 fill:#00bcd4
+    style Success fill:#66bb6a
     style Debug fill:#ffab91
+    style Trigger fill:#fff59d
 ```
 
 ---
 
-## 6. Arquitectura de Seguridad
+## 8. Arquitectura de Seguridad
 
 ```mermaid
 graph TB
@@ -332,6 +369,115 @@ graph TB
 
 ---
 
+## 6. Pipeline CI/CD con GitHub Actions
+
+```mermaid
+sequenceDiagram
+    participant Dev as Desarrollador
+    participant Git as GitHub Repo
+    participant GHA as GitHub Actions
+    participant EC2 as AWS EC2
+    participant Docker as Docker Engine
+    participant App as Flask App
+    participant Health as Health Check
+    
+    Note over Dev,Health: Flujo Automático de Despliegue
+    
+    Dev->>Git: git push origin main
+    Note over Git: Trigger: push a main/master<br/>Exclude: *.md, streamlit_app.py, tests
+    
+    Git->>GHA: Webhook: Iniciar workflow
+    GHA->>GHA: Checkout código (v4)
+    GHA->>GHA: Setup SSH con EC2_SSH_KEY
+    
+    GHA->>EC2: rsync: Copiar archivos
+    Note over EC2: Destino: /home/ubuntu/maia-back-proyecto<br/>Exclude: __pycache__, .git, venv, *.db
+    
+    GHA->>Docker: docker-compose down
+    Docker-->>GHA: Contenedores detenidos
+    
+    GHA->>Docker: docker system prune -f
+    Docker-->>GHA: Recursos limpiados
+    
+    GHA->>Docker: docker-compose up -d --build
+    Docker->>Docker: Build imagen desde Dockerfile
+    Docker->>App: Iniciar contenedor
+    
+    App->>App: Instalar dependencias
+    App->>App: Descargar modelos (si no existen)
+    App->>App: Inicializar BD SQLite
+    App->>App: Cargar modelos ML
+    App-->>Docker: Puerto 8000 listo
+    
+    GHA->>GHA: sleep 15 segundos
+    
+    loop Health Check (5 intentos)
+        GHA->>Health: curl http://localhost:8000/health
+        Health->>App: GET /health
+        App-->>Health: 200 OK + status JSON
+        Health-->>GHA: Health check response
+    end
+    
+    alt Health Check Exitoso
+        GHA->>GHA: ✅ Notify Success
+        GHA->>Dev: Notificación: Deployment successful
+    else Health Check Fallo
+        GHA->>GHA: ❌ Notify Failure
+        GHA->>Dev: Notificación: Deployment failed
+    end
+    
+    GHA->>GHA: Cleanup: rm SSH keys
+    
+    Note over Dev,Health: Workflow completo en ~3-5 minutos
+```
+
+---
+
+## 7. Configuración de GitHub Secrets
+
+```mermaid
+graph LR
+    subgraph "GitHub Repository Settings"
+        Secrets[🔐 Secrets & Variables]
+    end
+    
+    subgraph "Required Secrets"
+        S1[EC2_SSH_KEY<br/>Clave privada SSH<br/>para acceso EC2]
+        S2[EC2_HOST<br/>IP pública o hostname<br/>de instancia EC2]
+        S3[EC2_USER<br/>Usuario SSH<br/>generalmente: ubuntu]
+    end
+    
+    subgraph "GitHub Actions"
+        Workflow[📄 .github/workflows/deploy.yml]
+        Runner[🏃 Ubuntu Runner]
+    end
+    
+    subgraph "AWS EC2"
+        Instance[🖥️ Instancia EC2]
+        SecurityGroup[🔒 Security Group<br/>Puerto 22: SSH<br/>Puerto 8000: HTTP]
+    end
+    
+    Secrets --> S1
+    Secrets --> S2
+    Secrets --> S3
+    
+    S1 --> Workflow
+    S2 --> Workflow
+    S3 --> Workflow
+    
+    Workflow --> Runner
+    Runner -->|SSH con clave| Instance
+    SecurityGroup -.->|Protege| Instance
+    
+    style S1 fill:#f44336
+    style S2 fill:#ff9800
+    style S3 fill:#ffc107
+    style Workflow fill:#4caf50
+    style SecurityGroup fill:#e91e63
+```
+
+---
+
 ## Stack Tecnológico
 
 ### Frontend (Streamlit Cloud)
@@ -357,6 +503,28 @@ graph TB
 ### Servicios Externos
 - **Almacenamiento de Modelos**: Google Drive
 - **Control de Versiones**: GitHub
-- **CI/CD**: Despliegue manual (puede automatizarse)
+- **Hosting Frontend**: Streamlit Cloud
+
+### CI/CD Pipeline
+- **Plataforma**: GitHub Actions
+- **Workflow**: `.github/workflows/deploy.yml`
+- **Trigger**: Push a main/master (excluyendo frontend/docs)
+- **Deployment**: Automático a AWS EC2
+- **Método**: SSH + rsync + Docker Compose
+- **Verificación**: Health check endpoint
+- **Tiempo**: ~3-5 minutos por despliegue
+- **Secrets Requeridos**:
+  - `EC2_SSH_KEY`: Clave privada SSH
+  - `EC2_HOST`: IP/hostname de EC2
+  - `EC2_USER`: Usuario SSH (ubuntu)
+
+### Flujo de Trabajo
+1. **Desarrollo**: Código en repositorio GitHub
+2. **Commit**: Push a rama main/master
+3. **CI/CD**: GitHub Actions detecta cambios
+4. **Deploy**: Automático a EC2 vía SSH/rsync
+5. **Build**: Docker Compose construye y levanta servicios
+6. **Verify**: Health check confirma deployment
+7. **Notify**: Resultado enviado al desarrollador
 
 ---

@@ -19,3 +19,9 @@ maxUploadSize = 100
 [browser]
 gatherUsageStats = false
 
+[client]
+# Mostrar barra lateral expandida por defecto
+showSidebarNavigation = true
+# Usar modo de ancho completo
+toolbarMode = "minimal"
+
