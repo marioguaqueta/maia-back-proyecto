@@ -1,6 +1,6 @@
 # API de Detección de Fauna Africana
 
-Nuestro proecto se basa en una API REST basada en Flask para detectar y analizar fauna africana en imágenes aéreas/satelitales utilizando los modelos de aprendizaje profundo **YOLOv11** y **HerdNet**, con una moderna interfaz web Streamlit.
+Nuestro proyecto se basa en una API REST basada en Flask para detectar y analizar fauna africana en imágenes aéreas/satelitales utilizando los modelos de aprendizaje profundo **YOLOv11** y **HerdNet**, con una moderna interfaz web Streamlit.
 
 ## ✨ Características
 
@@ -549,8 +549,8 @@ HERDNET_THUMBNAIL_STEP=32
 
 ```bash
 # Clonar proyecto
-git clone https://github.com/tu-usuario/tu-proyecto.git
-cd tu-proyecto
+git clone https://github.com/marioguaqueta/maia-back-proyecto.git
+cd maia-back-proyecto
 ```
 
 #### Paso 2: Configurar Variables de Entorno
@@ -578,7 +578,7 @@ HERDNET_MODEL_FILENAME=herdnet_baseline_model.pth
 
 ```bash
 # Construir imagen Docker
-docker-compose build
+docker-compose build --no-cache
 
 # Iniciar servicios en segundo plano
 docker-compose up -d
@@ -592,6 +592,54 @@ docker-compose logs -f
 ```bash
 # Verificar que el contenedor esté corriendo
 docker-compose ps
+
+```
+---
+
+## 🎨 Frontend con Streamlit
+
+### Opción 1: Ejecución Local
+
+#### Paso 1: Instalar Dependencias
+
+```bash
+# Navegar al proyecto
+cd maia-back-proyecto
+
+# Crear entorno virtual (recomendado)
+python -m venv venv
+
+# Activar entorno virtual
+# Linux/Mac:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+
+# Instalar dependencias
+pip install -r requirements-streamlit.txt
+```
+
+#### Paso 2: Configurar Variables
+
+```bash
+# Copiar archivo de ejemplo
+cp .streamlit/env.example .streamlit/.env
+
+# Editar configuración
+nano .streamlit/.env
+
+API_BASE_URL=http://public_ip:8000
+```
+
+#### Paso 3: Ejecutar Streamlit
+
+```bash
+# Iniciar aplicación
+streamlit run streamlit_app.py
+
+# La aplicación se abrirá en:
+# http://localhost:8501
+```
 
 ---
 ## 📚 Manual de usuario aplicación cliente
