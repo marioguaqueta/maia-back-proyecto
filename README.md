@@ -1,6 +1,6 @@
 # API de Detección de Fauna Africana
 
-Una API REST basada en Flask para detectar y analizar fauna africana en imágenes aéreas/satelitales utilizando los modelos de aprendizaje profundo **YOLOv11** y **HerdNet**, con una moderna interfaz web Streamlit.
+Una API REST basada en Flask para detectar, contar y clasificar especies específicas de fauna africana utilizando imágenes aéreas, apoyado en las predicciones de los modelos de aprendizaje profundo **YOLOv11** y como referencia base **HerdNet**, facilitando el uso de usuarios finales a través de una interfaz web Streamlit.
 
 ## ✨ Características
 
