@@ -383,6 +383,116 @@ back/
 └── wildlife_detection.db  # Base de datos SQLite (auto-creada)
 ```
 
+### Variables de entorno
+
+
+
+### 📝 Variables Requeridas - Backend
+
+#### 🔑 Configuración de Google Drive
+```env
+# ID de la carpeta de Google Drive donde están los modelos
+GDRIVE_FOLDER_ID=TU_CARPETA_PUBLICA_DE_GOOGLE_DRIVE
+
+
+# Nombres de los archivos de modelos
+YOLO_MODEL_FILENAME=best.pt
+HERDNET_MODEL_FILENAME=herdnet_baseline_model.pth
+```
+> **📌 Nota**: El `GDRIVE_FOLDER_ID` se encuentra en la URL de la carpeta de Google Drive:
+> `https://drive.google.com/drive/folders/[ESTE_ES_EL_ID]`
+
+#### 📂 Configuración de Archivos
+```env
+# Extensiones permitidas (sin comillas, sin espacios)
+ALLOWED_IMAGE_EXTENSIONS=png,jpg,jpeg,gif,webp,bmp
+ALLOWED_ZIP_EXTENSIONS=zip
+```
+⚠️ **IMPORTANTE**: 
+- ✅ Correcto: `png,jpg,jpeg`
+- ❌ Incorrecto: `'png,jpg,jpeg'` o `"png,jpg,jpeg"` o `['png','jpg']`
+
+
+### 📝 Variables Opcionales - Backend
+
+```env
+# Base de datos (opcional, por defecto: wildlife_detection.db)
+DATABASE_NAME=wildlife_detection.db
+
+# Tamaño máximo de archivo en MB (opcional)
+MAX_UPLOAD_SIZE_MB=200
+
+# Directorio temporal (opcional)
+TEMP_DIR=/tmp/wildlife_detection
+```
+
+
+
+### 📝 Variables Esenciales - Frontend
+
+#### 🔗 Conexión con API
+```env
+# URL del backend Flask
+API_BASE_URL=http://localhost:8000
+
+# Email del administrador
+ADMIN_EMAIL=info@grupo12.yolomodel.com
+
+# URLs de ayuda y documentación
+EXPLAIN_VIDEO_URL=https://example.com/tutorials
+DOCS_URL=https://example.com/docs
+```
+
+#### 🤖 Disponibilidad de Modelos
+```env
+# Habilitar/deshabilitar modelo HerdNet en la UI
+ENABLE_HERDNET=true
+```
+
+### 📝 Variables de Interfaz (Opcionales)
+
+#### YOLOv11 - Configuración de UI
+```env
+# Sliders de confianza
+YOLO_CONF_MIN=0.1
+YOLO_CONF_MAX=0.9
+YOLO_CONF_DEFAULT=0.25
+YOLO_CONF_STEP=0.05
+
+# Sliders de IOU
+YOLO_IOU_MIN=0.1
+YOLO_IOU_MAX=0.9
+YOLO_IOU_DEFAULT=0.45
+YOLO_IOU_STEP=0.05
+
+# Opciones de tamaño de imagen
+YOLO_IMG_SIZES=416,480,640,800,960,1280,2560,5120,10240
+YOLO_IMG_SIZE_DEFAULT_INDEX=2
+```
+
+#### HerdNet - Configuración de UI
+```env
+# Opciones de tamaño de parche
+HERDNET_PATCH_SIZES=384,512,768,1024,2048,4096,8192,16384
+HERDNET_PATCH_SIZE_DEFAULT_INDEX=1
+
+# Opciones de rotación
+HERDNET_ROTATION_OPTIONS=0,1,2,3
+HERDNET_ROTATION_DEFAULT_INDEX=0
+
+# Sliders de superposición
+HERDNET_OVERLAP_MIN=0
+HERDNET_OVERLAP_MAX=300
+HERDNET_OVERLAP_DEFAULT=160
+HERDNET_OVERLAP_STEP=16
+
+# Sliders de miniatura
+HERDNET_THUMBNAIL_MIN=128
+HERDNET_THUMBNAIL_MAX=512
+HERDNET_THUMBNAIL_DEFAULT=256
+HERDNET_THUMBNAIL_STEP=32
+```
+
 
 
 ### Despliegue en la Nube
@@ -393,38 +503,13 @@ El sistema tiene dos componentes que necesitan despliegue separado:
 2. **Frontend Streamlit** → Streamlit Cloud (¡gratis!)
 
 
-Resumen rápido:
-- Usa `requirements-backend.txt` para el backend Flask
-- Usa `requirements-streamlit.txt` para el frontend Streamlit  
-- Configura `API_BASE_URL` en los secretos de Streamlit para apuntar a tu backend
-- Los modelos se auto-descargan desde Google Drive en la primera ejecución
 
-### Docker
-El despliegue con Docker está soportado. Ver `Dockerfile` para configuración.
 
-## 📝 Requisitos
 
-- Python 3.8+
-- PyTorch 2.0+
-- CUDA (opcional, para aceleración GPU)
-- 8GB+ RAM (16GB+ recomendado)
+## 📚 Manual de usuario aplicación cliente
 
-## 🐛 Solución de Problemas
+[Manual de usuario](https://github.com/MackieUni/Grupo12-ProyectoFinal/blob/main/docs/documentacion_app/MANUAL%20DE%20USUARIO%20DE%20SISTEMA%20DE%20DETECCI%C3%93N%20DE%20FAUNA%20AFRICANA.pdf)
 
-### Los modelos no se descargan
-- Verificar conexión a internet
-- Verificar que la carpeta de Google Drive sea accesible
-- Verificar espacio en disco (necesitas ~600MB libres)
-
-### Sin memoria
-- Reducir `patch_size` (HerdNet) o `img_size` (YOLO)
-- Procesar menos imágenes a la vez
-- Deshabilitar miniaturas/gráficos
-
-### Procesamiento lento
-- Habilitar aceleración GPU
-- Reducir superposición (HerdNet)
-- Establecer `include_annotated_images=false` (YOLO)
 
 ## 📚 Citas
 
