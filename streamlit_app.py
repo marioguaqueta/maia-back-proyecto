@@ -1047,8 +1047,7 @@ def display_results(result, model_choice, file_type='zip'):
 
     # Si no hay detecciones, mostrar mensaje y salir
     if result.get('summary', {}).get('total_detections', 0) == 0:
-        st.warning(" No se encontraron detecciones")
-        st.info("No se encontraron detecciones en el archivo subido. Por favor intenta nuevamente con diferentes parámetros o un archivo diferente.")
+        st.warning(" No hay detecciones en las imágenes procesadas. Puedes intentar con diferentes parámetros o un archivo diferente.")
         
     
     # Estadísticas resumen
