@@ -132,7 +132,7 @@ La interfaz web Streamlit proporciona una hermosa interfaz basada en tarjetas pa
 - **Detalles Plegables**: Mantén la interfaz limpia, expande cuando sea necesario
 - **Acciones Integradas**: Ver y descargar directamente desde las tarjetas
 
-Para más detalles, ver [`CARD_UI_DESIGN.md`](CARD_UI_DESIGN.md)
+
 
 ## 🔌 Endpoints de la API
 
@@ -343,8 +343,8 @@ Los modelos se descargan automáticamente desde Google Drive en la primera ejecu
 - ✅ Perfecto para despliegue en Streamlit Cloud
 
 **Archivos de Modelos:**
-- `best.pt` (YOLOv11) - ~300 MB
-- `herdnet_model.pth` (HerdNet) - ~250 MB
+- `best.pt` (YOLOv11) 
+- `herdnet_model.pth` (HerdNet) 
 
 ## 📊 Información de Modelos
 
@@ -365,7 +365,7 @@ Los modelos se descargan automáticamente desde Google Drive en la primera ejecu
 2. Elefante (*Loxodonta africana*)
 3. Kob (*Kobus kob*)
 4. Topi (*Damaliscus lunatus*)
-5. Jabalí Verrugoso (*Phacochoerus africanus*)
+5. Jabalí (*Phacochoerus africanus*)
 6. Antílope Acuático (*Kobus ellipsiprymnus*)
 
 ## 🛠️ Estructura del Proyecto
@@ -375,26 +375,15 @@ back/
 ├── app.py                    # API Flask principal
 ├── streamlit_app.py          # Interfaz web Streamlit
 ├── database.py               # Módulo de base de datos SQLite
-├── model_loader.py           # Descargador de modelos Google Drive
-├── test_api.py              # Script de prueba de API
-├── test_yolo_api.py         # Script de prueba YOLO
-├── start.sh                 # Script de inicio Unix
-├── start.bat                # Script de inicio Windows
+├── model_loader.py           # Script para descargar modelos desde Google Drive
 ├── requirements.txt         # Dependencias Python
-├── README.md               # Este archivo
+├── README.md               # Archivo de contexto del proyecto
 ├── best.pt                 # Modelo YOLOv11 (auto-descargado)
 ├── herdnet_model.pth      # Modelo HerdNet (auto-descargado)
 └── wildlife_detection.db  # Base de datos SQLite (auto-creada)
 ```
 
-## 🚀 Despliegue
 
-### Despliegue Local
-Usa los scripts de inicio para un fácil despliegue local:
-```bash
-./start.sh  # Linux/Mac
-start.bat   # Windows
-```
 
 ### Despliegue en la Nube
 
