@@ -40,6 +40,11 @@ DOCS_URL = os.getenv(
     st.secrets.get("DOCS_URL", "https://example.com/docs")
 )
 
+PAPER_URL = os.getenv(
+    "PAPER_URL",
+    st.secrets.get("PAPER_URL", "https://arxiv.org/abs/2309.XXXX")
+)
+
 # ========================================
 # YOLOv11 UI Configuration
 # ========================================
@@ -1297,8 +1302,13 @@ def about_page():
     """
     
     # Add HerdNet citation if enabled
-    if ENABLE_HERDNET:
-        models_section += """
+    models_section += f"""
+    **Implementación de Arquitecturas de Aprendizaje Profundo para Detección y Conteo Automatizado de Fauna en Levantamientos Aéreos:**
+    ```
+    Rondón, I., Ortiz, D., Guaquetá, J. P., Trujillo, D. (2025).
+    **- Documento en línea:** [Enlace al Artículo]({PAPER_URL})
+    ```
+
     **HerdNet:**
     ```
     Delplanque, A., Foucher, S., Lejeune, P., Linchant, J., & Théau, J. (2022).
