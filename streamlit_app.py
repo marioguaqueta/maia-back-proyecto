@@ -40,6 +40,11 @@ DOCS_URL = os.getenv(
     st.secrets.get("DOCS_URL", "https://example.com/docs")
 )
 
+PAPER_URL = os.getenv(
+    "PAPER_URL",
+    st.secrets.get("PAPER_URL", "https://arxiv.org/abs/2309.XXXX")
+)
+
 # ========================================
 # YOLOv11 UI Configuration
 # ========================================
@@ -1044,6 +1049,11 @@ def display_results(result, model_choice, file_type='zip'):
     
     # ID de tarea
     st.info(f"📋 ID de Tarea: `{result.get('task_id', 'N/A')}` - ¡Guarda esto para recuperar resultados después!")
+
+    # Si no hay detecciones, mostrar mensaje y salir
+    if result.get('summary', {}).get('total_detections', 0) == 0:
+        st.warning(" No hay detecciones en las imágenes procesadas. Puedes intentar con diferentes parámetros o un archivo diferente.")
+        
     
     # Estadísticas resumen
     st.subheader("📊 Resumen")
@@ -1292,8 +1302,14 @@ def about_page():
     """
     
     # Add HerdNet citation if enabled
-    if ENABLE_HERDNET:
-        models_section += """
+    models_section += f"""
+    **Artículo académico**
+    ```
+    Implementación de Arquitecturas de Aprendizaje Profundo para Detección y Conteo Automatizado de Fauna en Levantamientos Aéreos:
+    Rondón, I., Ortiz, D., Guaquetá, J. P., Trujillo, D. (2025).
+    ```
+    **- Documento en línea:** [Enlace al Artículo]({PAPER_URL})
+
     **HerdNet:**
     ```
     Delplanque, A., Foucher, S., Lejeune, P., Linchant, J., & Théau, J. (2022).
